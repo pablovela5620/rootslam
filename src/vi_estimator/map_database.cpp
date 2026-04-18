@@ -13,20 +13,16 @@ MapDatabase::MapDatabase(const VioConfig& config, const Calibration<double>& cal
   this->covisibility_graph.setHighCovisibilityThreshold(config.loop_closing_pgo_min_covisibility_weight);
   this->covisibility_graph.setGraphScoreChangedCallback(
       [this](FrameId kf_id, NodeScore new_score) { handleGraphScoreChange(kf_id, new_score); });
-  this->map_export_path = map_export_path.empty() ? "exported_map" : map_export_path;
+  this->map_export_path = map_export_path;
 }
 
 void MapDatabase::write_map_stamp(basalt::MapStamp::Ptr& map_stamp) {
-  if (map_stamp == nullptr) {
-    return;
-  }
+  if (map_stamp == nullptr) { return; }
 
   std::unique_lock<std::mutex> lock(mutex);
 
   for (const auto& [kf_id, _] : map_stamp->lmdb->getKeyframes()) {
-    if (!map.keyframeExists(kf_id)) {
-      active_keyframes.insert(kf_id);
-    }
+    if (!map.keyframeExists(kf_id)) { active_keyframes.insert(kf_id); }
   }
 
   map_stamp->lmdb->removeReferencesToCulledKeyframes(map, most_recent_ts);
@@ -34,9 +30,7 @@ void MapDatabase::write_map_stamp(basalt::MapStamp::Ptr& map_stamp) {
   map.mergeLMDB(map_stamp->lmdb, true);
 
   FrameId curr_most_recent_ts = map.getKeyframes().empty() ? 0 : map.getKeyframes().rbegin()->first;
-  if (curr_most_recent_ts > most_recent_ts) {
-    most_recent_ts = curr_most_recent_ts;
-  }
+  if (curr_most_recent_ts > most_recent_ts) { most_recent_ts = curr_most_recent_ts; }
 
   if (config.map_covisibility_criteria == MapCovisibilityCriteria::MAP_COV_STS) {
     std::set<TimeCamId> kfs_to_compute;
@@ -75,9 +69,7 @@ void MapDatabase::write_map_stamp(basalt::MapStamp::Ptr& map_stamp) {
 }
 
 void MapDatabase::write_map_marg(std::set<FrameId>& keyframes_to_marg) {
-  if (keyframes_to_marg.empty()) {
-    return;
-  }
+  if (keyframes_to_marg.empty()) { return; }
 
   std::unique_lock<std::mutex> lock(mutex);
 
@@ -180,9 +172,7 @@ void MapDatabase::handle_loop_detection(LoopDetectionResult::Ptr& loop_detection
     } else {
       LoopClosureDecision::Ptr loop_closure_decision = std::make_shared<LoopClosureDecision>();
       loop_closure_decision->close_loop = false;
-      if (out_lc_dec_res_queue) {
-        out_lc_dec_res_queue->push(loop_closure_decision);
-      }
+      if (out_lc_dec_res_queue) { out_lc_dec_res_queue->push(loop_closure_decision); }
     }
 
     return;
@@ -192,9 +182,7 @@ void MapDatabase::handle_loop_detection(LoopDetectionResult::Ptr& loop_detection
   if (!map.keyframeExists(loop_detection_result->candidate_kf_id)) {
     LoopClosureDecision::Ptr loop_closure_decision = std::make_shared<LoopClosureDecision>();
     loop_closure_decision->close_loop = false;
-    if (out_lc_dec_res_queue) {
-      out_lc_dec_res_queue->push(loop_closure_decision);
-    }
+    if (out_lc_dec_res_queue) { out_lc_dec_res_queue->push(loop_closure_decision); }
     return;
   }
 
@@ -226,17 +214,13 @@ void MapDatabase::handle_loop_detection(LoopDetectionResult::Ptr& loop_detection
     current_loop_keyframes.insert(loop_detection_result->current_kf_id);
     current_loop_keyframes.insert(loop_detection_result->candidate_kf_id);
 
-    if (out_lc_dec_res_queue) {
-      out_lc_dec_res_queue->push(loop_closure_decision);
-    }
+    if (out_lc_dec_res_queue) { out_lc_dec_res_queue->push(loop_closure_decision); }
 
     return;
   }
 
   loop_closure_decision->close_loop = false;
-  if (out_lc_dec_res_queue) {
-    out_lc_dec_res_queue->push(loop_closure_decision);
-  }
+  if (out_lc_dec_res_queue) { out_lc_dec_res_queue->push(loop_closure_decision); }
 
   covisibility_graph.addLoopClosure(loop_detection_result->candidate_kf_id, loop_detection_result->current_kf_id);
 
@@ -252,9 +236,7 @@ void MapDatabase::handle_loop_detection(LoopDetectionResult::Ptr& loop_detection
 void MapDatabase::handle_loop_closure(LoopClosureResult::Ptr& loop_closure_result) {
   std::unique_lock<std::mutex> lock(mutex);
 
-  if (loop_closure_result->keyframe_poses != nullptr) {
-    map.mergeKeyframesPoses(loop_closure_result->keyframe_poses);
-  }
+  if (loop_closure_result->keyframe_poses != nullptr) { map.mergeKeyframesPoses(loop_closure_result->keyframe_poses); }
 
   LoopDetectionResult::Ptr loop_detection_result = loop_closure_result->loop_detection_result;
 
@@ -289,9 +271,7 @@ void MapDatabase::merge_loop_landmarks(const LoopDetectionResult::Ptr& loop_dete
     for (const auto& [curr_lm_id, obs] : lm_obs_map) {
       LandmarkId host_lm_id = loop_detection_result->lm_fusions[curr_lm_id];
 
-      if (!map.landmarkExists(host_lm_id)) {
-        continue;
-      }
+      if (!map.landmarkExists(host_lm_id)) { continue; }
 
       if (!map.landmarkExists(curr_lm_id) || host_lm_id == curr_lm_id) {
         Landmark<float>& host_lm = map.getLandmark(host_lm_id);
@@ -300,9 +280,7 @@ void MapDatabase::merge_loop_landmarks(const LoopDetectionResult::Ptr& loop_dete
         if (covisibilities_updated[curr_tcid.frame_id].find(host_lm_id) ==
             covisibilities_updated[curr_tcid.frame_id].end()) {
           for (const auto& [tcid, _] : host_lm.obs) {
-            if (tcid.frame_id == curr_tcid.frame_id) {
-              continue;
-            }
+            if (tcid.frame_id == curr_tcid.frame_id) { continue; }
             covisibility_increments[CovisibilityEdge(curr_tcid.frame_id, tcid.frame_id)]++;
           }
           covisibilities_updated[curr_tcid.frame_id].insert(host_lm_id);
@@ -323,27 +301,19 @@ void MapDatabase::merge_loop_landmarks(const LoopDetectionResult::Ptr& loop_dete
     LandmarkId host_lm_id = loop_detection_result->lm_fusions[curr_lm_id];
 
     // The host landmark might have been already merged into another one
-    if (!map.landmarkExists(host_lm_id)) {
-      continue;
-    }
+    if (!map.landmarkExists(host_lm_id)) { continue; }
 
     // Before merging, update the covisibility graph
     const auto& host_lm = map.getLandmark(host_lm_id);
     const auto& curr_lm = map.getLandmark(curr_lm_id);
     std::set<FrameId> old_kf_obs;
     std::set<FrameId> new_kf_obs;
-    for (const auto& [tcid_host, _] : host_lm.obs) {
-      old_kf_obs.insert(tcid_host.frame_id);
-    }
-    for (const auto& [curr_tcid, _] : curr_lm.obs) {
-      new_kf_obs.insert(curr_tcid.frame_id);
-    }
+    for (const auto& [tcid_host, _] : host_lm.obs) { old_kf_obs.insert(tcid_host.frame_id); }
+    for (const auto& [curr_tcid, _] : curr_lm.obs) { new_kf_obs.insert(curr_tcid.frame_id); }
 
     for (const auto& old_kf_id : old_kf_obs) {
       for (const auto& new_kf_id : new_kf_obs) {
-        if (old_kf_id == new_kf_id) {
-          continue;
-        }
+        if (old_kf_id == new_kf_id) { continue; }
         covisibility_increments[CovisibilityEdge(old_kf_id, new_kf_id)]++;
       }
     }
@@ -364,9 +334,7 @@ void MapDatabase::merge_loop_landmarks(const LoopDetectionResult::Ptr& loop_dete
 }
 
 void MapDatabase::read_covisibility_req(std::vector<KeypointId>& keypoints) {
-  if (keypoints.empty()) {
-    return;
-  }
+  if (keypoints.empty()) { return; }
 
   std::unique_lock<std::mutex> lock(mutex);
   handleCovisibilityReq(keypoints);
@@ -378,9 +346,7 @@ void MapDatabase::read_island_req(FrameId keyframe, size_t num_neighbors) {
   std::unique_lock<std::mutex> lock(mutex);
 
   if (!map.keyframeExists(keyframe)) {
-    if (out_island_res_queue) {
-      out_island_res_queue->push(island_response);
-    }
+    if (out_island_res_queue) { out_island_res_queue->push(island_response); }
     return;
   }
 
@@ -391,23 +357,17 @@ void MapDatabase::read_island_req(FrameId keyframe, size_t num_neighbors) {
   }
 
   for (const auto& kf_id : island_response->keyframes) {
-    if (!map.keyframeExists(kf_id)) {
-      continue;
-    }
+    if (!map.keyframeExists(kf_id)) { continue; }
 
     for (size_t cam_id = 0; cam_id < calib.intrinsics.size(); cam_id++) {
       TimeCamId kf_tcid{kf_id, cam_id};
       auto it = map.getKeyframeObs().find(kf_tcid);
-      if (it == map.getKeyframeObs().end()) {
-        continue;
-      }
+      if (it == map.getKeyframeObs().end()) { continue; }
       std::set<LandmarkId> lm_ids = it->second;
       island_response->keyframe_obs[kf_tcid] = lm_ids;
 
       for (const auto& lm_id : lm_ids) {
-        if (island_response->landmarks_3d.find(lm_id) != island_response->landmarks_3d.end()) {
-          continue;
-        }
+        if (island_response->landmarks_3d.find(lm_id) != island_response->landmarks_3d.end()) { continue; }
         auto lm_pos = map.getLandmark(lm_id);
         int64_t frame_id = lm_pos.host_kf_id.frame_id;
         Sophus::SE3d T_w_i = map.getKeyframePose(frame_id).cast<double>();
@@ -425,9 +385,7 @@ void MapDatabase::read_island_req(FrameId keyframe, size_t num_neighbors) {
     }
   }
 
-  if (out_island_res_queue) {
-    out_island_res_queue->push(island_response);
-  }
+  if (out_island_res_queue) { out_island_res_queue->push(island_response); }
 }
 
 void MapDatabase::initialize() {
@@ -682,13 +640,9 @@ const std::map<std::string, double> MapDatabase::getStats() {
 
 void MapDatabase::updateCovisibilityGraph(const LandmarkDatabase<Scalar>::Ptr& lmdb) {
   for (const auto& [kf_id, _] : lmdb->getKeyframes()) {
-    if (covisibility_graph.hasNode(kf_id)) {
-      continue;
-    }
+    if (covisibility_graph.hasNode(kf_id)) { continue; }
 
-    if (covisibility_graph.getRoot() == CovisibilityGraph::invalid()) {
-      covisibility_graph.setRoot(kf_id);
-    }
+    if (covisibility_graph.getRoot() == CovisibilityGraph::invalid()) { covisibility_graph.setRoot(kf_id); }
 
     // Compute the covisibility edges
     std::unordered_map<FrameId, int> covisibilities;
@@ -698,9 +652,7 @@ void MapDatabase::updateCovisibilityGraph(const LandmarkDatabase<Scalar>::Ptr& l
       TimeCamId kf_tcid{kf_id, static_cast<CamId>(cam_id)};
 
       auto obs_it = map.getKeyframeObs().find(kf_tcid);
-      if (obs_it == map.getKeyframeObs().end()) {
-        continue;
-      }
+      if (obs_it == map.getKeyframeObs().end()) { continue; }
 
       for (const auto& lm_id : obs_it->second) {
         // Only count each landmark once per keyframe
@@ -710,14 +662,10 @@ void MapDatabase::updateCovisibilityGraph(const LandmarkDatabase<Scalar>::Ptr& l
 
         for (const auto& lm_obs : lm.obs) {
           FrameId other_kf_id = lm_obs.first.frame_id;
-          if (other_kf_id == kf_id) {
-            continue;
-          }
+          if (other_kf_id == kf_id) { continue; }
 
           // Add covisibility edges only to existing nodes or to the root
-          if (!covisibility_graph.hasNode(other_kf_id) && covisibility_graph.getRoot() != other_kf_id) {
-            continue;
-          }
+          if (!covisibility_graph.hasNode(other_kf_id) && covisibility_graph.getRoot() != other_kf_id) { continue; }
 
           covisibilities[other_kf_id]++;
         }
@@ -732,9 +680,7 @@ void MapDatabase::updateCovisibilityGraph(const LandmarkDatabase<Scalar>::Ptr& l
       auto iter = map.getKeyframes().find(kf_id);
 
       // Check this for safety, but it should never happen
-      if (iter == map.getKeyframes().begin()) {
-        continue;
-      }
+      if (iter == map.getKeyframes().begin()) { continue; }
 
       --iter;
       FrameId prev_kf_id = iter->first;
@@ -773,9 +719,7 @@ void MapDatabase::cullKeyframes(int num_to_cull) {
   while (num_to_cull > 0) {
     // Take the keyframe with the lowest score
     auto it = keyframe_score_set.begin();
-    if (it == keyframe_score_set.end()) {
-      break;
-    }
+    if (it == keyframe_score_set.end()) { break; }
 
     FrameId kf_id = it->second;
 
@@ -881,9 +825,7 @@ float MapDatabase::computeTotalObservedLmsScore(FrameId kf_id) {
     TimeCamId tcid{kf_id, cam_id};
 
     const auto& obs_it = map.getKeyframeObs().find(tcid);
-    if (obs_it == map.getKeyframeObs().end()) {
-      continue;
-    }
+    if (obs_it == map.getKeyframeObs().end()) { continue; }
     for (const auto& lm_id : obs_it->second) unique_lms.insert(lm_id);
   }
 
@@ -944,16 +886,12 @@ void MapDatabase::saveJson(const std::string& file_path) {
   // Identify valid landmarks (at least 2 observations and finite position)
   std::unordered_set<LandmarkId> valid_lm_ids;
   for (const auto& [lm_id, lm] : map.getLandmarks()) {
-    if (lm.obs.size() < 2) {
-      continue;
-    }
+    if (lm.obs.size() < 2) { continue; }
 
     auto landmarks_3d = get_landmarks_3d_pos({lm_id});
     Vec3d lm_3d = landmarks_3d.at(lm_id);
 
-    if (!std::isfinite(lm_3d.x()) || !std::isfinite(lm_3d.y()) || !std::isfinite(lm_3d.z())) {
-      continue;
-    }
+    if (!std::isfinite(lm_3d.x()) || !std::isfinite(lm_3d.y()) || !std::isfinite(lm_3d.z())) { continue; }
 
     valid_lm_ids.insert(lm_id);
   }
@@ -989,9 +927,7 @@ void MapDatabase::saveJson(const std::string& file_path) {
   nlohmann::json observations_json = nlohmann::json::array();
   for (const auto& [tcid, obs_set] : map.getKeyframeObs()) {
     for (const auto& lm_id : obs_set) {
-      if (valid_lm_ids.find(lm_id) == valid_lm_ids.end()) {
-        continue;
-      }
+      if (valid_lm_ids.find(lm_id) == valid_lm_ids.end()) { continue; }
 
       const auto& lm = map.getLandmark(lm_id);
       const auto& pt = lm.obs.at(tcid);
