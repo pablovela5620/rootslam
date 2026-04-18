@@ -33,8 +33,8 @@ build:
   stage: prepare
   extends: .ccache
   script:
-    - time cmake --preset=release
-    - time cmake --build build
+    - time cmake --preset=release -DBASALT_INSTANTIATIONS_DOUBLE=off
+    - time cmake --build build --target basalt_vio
     - rm -f $GET_DATASET_LOCKFILE
   artifacts:
     paths:
@@ -72,7 +72,7 @@ build:
       for i in $(seq 1 $REPETITIONS)
       do
           echo "Run repetition $i / $REPETITIONS"
-          ./build/basalt_vio --save-times 1 --show-gui 0 --deterministic $DETERMINISTIC --num-threads $NUM_THREADS --dataset-path $FINAL_DS_PATH --dataset-type $DS_FORMAT --cam-calib $DS_CALIB --config-path $DS_CONFIG --save-trajectory euroc --save-trajectory-fn tracking.$DATASET.csv 2>&1 | tee output.$DATASET.log
+          ./build/basalt_vio --save-times 1 --show-gui 0 --deterministic $DETERMINISTIC --num-threads $NUM_THREADS --dataset-path $FINAL_DS_PATH --dataset-type $DS_FORMAT --cam-calib $DS_CALIB --config-path $DS_CONFIG --save-trajectory euroc --save-trajectory-fn tracking.$DATASET.csv --map-export-path map 2>&1 | tee output.$DATASET.log
           ls
           export RESDIR=$RESULTS_DIR/$CI_COMMIT_SHORT_SHA-$i/$DATASET
           echo "Results will be saved in $RESDIR"
@@ -81,6 +81,7 @@ build:
           mv timing.tracking.$DATASET.csv $RESDIR/timing.csv
           mv stats_vio.json $RESDIR/stats_vio.json
           mv output.$DATASET.log $RESDIR/output.log
+          mv map $RESDIR/map
           tree $RESDIR
       done
     - echo "Runs completed"
