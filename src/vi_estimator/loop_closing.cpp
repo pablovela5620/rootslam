@@ -127,9 +127,7 @@ void LoopClosing::indexKeyframe(const LoopClosingInput::Ptr& loop_closing_input,
 
     // can optimize here by only computing descriptors for the new kpts
     for (const auto& [kp_id, pos] : loop_closing_input->keypoints[cam_id]) {
-      if (!img_raw.InBounds(pos.translation().x(), pos.translation().y(), EDGE_THRESHOLD)) {
-        continue;
-      }
+      if (!img_raw.InBounds(pos.translation().x(), pos.translation().y(), EDGE_THRESHOLD)) { continue; }
       kd.corners.emplace_back(pos.translation().cast<double>());
       keypoint_ids.emplace_back(kp_id);
     }
@@ -143,9 +141,7 @@ void LoopClosing::indexKeyframe(const LoopClosingInput::Ptr& loop_closing_input,
     hash_bow_database->add_to_database(tcid, curr_bow_vector);
 
     // Use the bow vector of the left camera for later retrieval
-    if (cam_id == 0) {
-      bow_vector = curr_bow_vector;
-    }
+    if (cam_id == 0) { bow_vector = curr_bow_vector; }
 
     for (size_t i = 0; i < kd.corners.size(); i++) {
       std::bitset<256> descriptor = kd.corner_descriptors[i];
@@ -190,9 +186,7 @@ bool LoopClosing::detectLoop(const LoopClosingInput::Ptr& loop_closing_input, co
   }
 
   cumulative_times[0] += validation_start_ts;
-  for (size_t i = 1; i < cumulative_times.size(); ++i) {
-    cumulative_times[i] += cumulative_times[i - 1];
-  }
+  for (size_t i = 1; i < cumulative_times.size(); ++i) { cumulative_times[i] += cumulative_times[i - 1]; }
 
   loop_closing_input->input_images->addKeyframeTime("lc_cumulative_initial_matching_ended", cumulative_times[0]);
   loop_closing_input->input_images->addKeyframeTime("lc_cumulative_island_response_received", cumulative_times[1]);
@@ -242,9 +236,7 @@ bool LoopClosing::validateCandidate(const LoopClosingInput::Ptr& loop_closing_in
   std::vector<std::vector<KeypointId>> candidate_kf_kpts(calib.intrinsics.size());
   for (size_t i = 0; i < calib.intrinsics.size(); i++) {
     TimeCamId candidate_tcid{candidate_kf, i};
-    for (const auto& kpt : kpt_descriptors[candidate_tcid]) {
-      candidate_kf_kpts[i].emplace_back(kpt.first);
-    }
+    for (const auto& kpt : kpt_descriptors[candidate_tcid]) { candidate_kf_kpts[i].emplace_back(kpt.first); }
   }
   matchKeyframes(curr_kf_id, candidate_kf, curr_kf_kpts, candidate_kf_kpts, matches);
   consolidateMatches(matches);
@@ -281,12 +273,8 @@ bool LoopClosing::validateCandidate(const LoopClosingInput::Ptr& loop_closing_in
     std::vector<std::vector<KeypointId>> candidate_kf_kpts(calib.intrinsics.size());
     for (size_t i = 0; i < calib.intrinsics.size(); i++) {
       TimeCamId candidate_tcid{neighbor_kf, i};
-      if (keyframe_obs.find(candidate_tcid) == keyframe_obs.end()) {
-        continue;
-      }
-      for (const auto& lm_id : keyframe_obs.at(candidate_tcid)) {
-        candidate_kf_kpts[i].emplace_back(lm_id);
-      }
+      if (keyframe_obs.find(candidate_tcid) == keyframe_obs.end()) { continue; }
+      for (const auto& lm_id : keyframe_obs.at(candidate_tcid)) { candidate_kf_kpts[i].emplace_back(lm_id); }
     }
     matchKeyframes(curr_kf_id, neighbor_kf, curr_kf_kpts, candidate_kf_kpts, matches);
   }
@@ -321,9 +309,7 @@ bool LoopClosing::validateCandidate(const LoopClosingInput::Ptr& loop_closing_in
     matches = inlier_matches;
 
     std::vector<std::unordered_set<LandmarkId>> matched_landmarks(calib.intrinsics.size());
-    for (const auto& match : matches) {
-      matched_landmarks[match.current_kf_cam].insert(match.candidate_kf_kpt_id);
-    }
+    for (const auto& match : matches) { matched_landmarks[match.current_kf_cam].insert(match.candidate_kf_kpt_id); }
 
     for (size_t i = 0; i < config.loop_closing_cameras_to_reproject.size(); i++) {
       size_t cam_id = config.loop_closing_cameras_to_reproject[i];
@@ -340,9 +326,7 @@ bool LoopClosing::validateCandidate(const LoopClosingInput::Ptr& loop_closing_in
       Keypoints reprojected_keypoints;
       reprojectLandmarks(curr_kf_estimated_pose, cam_id, points_to_reproject, reprojected_keypoints);
 
-      if (out_lc_vis_queue) {
-        loop_closing_visualization_data->reprojected_keypoints[i] = reprojected_keypoints;
-      }
+      if (out_lc_vis_queue) { loop_closing_visualization_data->reprojected_keypoints[i] = reprojected_keypoints; }
 
       const basalt::ManagedImage<uint16_t>& img = *loop_closing_input->input_images->img_data[cam_id].img;
       for (const auto& kp : reprojected_keypoints) {
@@ -352,9 +336,7 @@ bool LoopClosing::validateCandidate(const LoopClosingInput::Ptr& loop_closing_in
         std::bitset<256> center_descriptor = kpt_descriptors[TimeCamId{candidate_kf, cam_id}][kp.first];
         bool match_found = searchInWindow(img, kp.second, center_descriptor, detected_kpts, match_pos);
 
-        if (out_lc_vis_queue) {
-          loop_closing_visualization_data->redetected_keypoints[i][kp.first] = detected_kpts;
-        }
+        if (out_lc_vis_queue) { loop_closing_visualization_data->redetected_keypoints[i][kp.first] = detected_kpts; }
 
         if (!match_found) continue;
 
@@ -453,9 +435,7 @@ bool LoopClosing::checkCovisibility(const FrameId& kf1_id, const FrameId& kf2_id
   for (size_t i = 0; i < calib.intrinsics.size(); i++) {
     TimeCamId tcid = TimeCamId{kf1_id, i};
     const auto& kf1_kpt_descriptors = kpt_descriptors[tcid];
-    for (const auto& kpt_desc : kf1_kpt_descriptors) {
-      kf1_landmarks.insert(kpt_desc.first);
-    }
+    for (const auto& kpt_desc : kf1_kpt_descriptors) { kf1_landmarks.insert(kpt_desc.first); }
   }
 
   for (size_t i = 0; i < calib.intrinsics.size(); i++) {
@@ -585,9 +565,7 @@ size_t LoopClosing::estimateAbsolutePose(const std::vector<Keypoints>& last_kf_k
     match_indexes.push_back(i);
   }
 
-  if (bearingVectors.empty() || points.empty() || bearingVectors.size() != points.size()) {
-    return 0;
-  }
+  if (bearingVectors.empty() || points.empty() || bearingVectors.size() != points.size()) { return 0; }
 
   opengv::absolute_pose::NoncentralAbsoluteAdapter adapter(bearingVectors, camCorrespondences, points, camOffsets,
                                                            camRotations);
@@ -603,9 +581,7 @@ size_t LoopClosing::estimateAbsolutePose(const std::vector<Keypoints>& last_kf_k
   ransac.max_iterations_ = config.loop_closing_pnp_ransac_iterations;
 
   bool success = ransac.computeModel();
-  if (!success || ransac.inliers_.empty()) {
-    return 0;
-  }
+  if (!success || ransac.inliers_.empty()) { return 0; }
 
   // Extract pose from best model and refine with nonlinear optimization
   const opengv::transformation_t model = ransac.model_coefficients_;
@@ -644,18 +620,14 @@ void LoopClosing::reprojectLandmarks(const Sophus::SE3d& T_w_i, size_t cam_id,
     Eigen::Vector2d uv;
     bool valid = calib.intrinsics[cam_id].project(pt_c, uv);
 
-    if (pt_c.z() <= 0) {
-      continue;
-    }
+    if (pt_c.z() <= 0) { continue; }
 
     if (!valid) continue;
 
     // Check if the reprojected point is within the image bounds
     const size_t w = calib.resolution[cam_id].x();
     const size_t h = calib.resolution[cam_id].y();
-    if (uv.x() < 0 || uv.x() >= w || uv.y() < 0 || uv.y() >= h) {
-      continue;
-    }
+    if (uv.x() < 0 || uv.x() >= w || uv.y() < 0 || uv.y() >= h) { continue; }
 
     reprojected_keypoints[lm_id] = Eigen::Translation2f(uv.cast<float>());
   }
@@ -692,9 +664,7 @@ bool LoopClosing::searchInWindow(const basalt::ManagedImage<uint16_t>& img, cons
   }
   kd = std::move(kd_filtered);
 
-  for (const auto& kpt : kd.corners) {
-    detected_kpts.emplace_back(kpt.cast<float>());
-  }
+  for (const auto& kpt : kd.corners) { detected_kpts.emplace_back(kpt.cast<float>()); }
 
   computeAngles(img_raw, kd, true);
   computeDescriptors(img_raw, kd);
@@ -735,9 +705,7 @@ bool LoopClosing::closeLoop(const LoopClosingInput::Ptr& loop_closing_input,
 
   loop_closing_input->input_images->addKeyframeTime("lc_pgo_problem_solved");
 
-  if (!success) {
-    return false;
-  }
+  if (!success) { return false; }
 
   applyOptimizedPoses(map_of_poses, *loop_closure_decision->keyframe_poses);
 
@@ -763,6 +731,8 @@ void LoopClosing::buildPoseGraph(const LoopDetectionResult::Ptr& loop_detection_
   for (const auto& [kf_id, pose] : keyframe_poses) {
     map_of_poses[kf_id] = Pose3d{pose.translation().cast<double>(), pose.unit_quaternion().cast<double>()};
   }
+
+  // TODO: check that i'm only adding each edge once
 
   // Add the constraints based on the relative poses of the spanning tree
   FrameId spanning_tree_root = covisibility_graph.getRoot();
@@ -914,6 +884,8 @@ bool LoopClosing::solveCeresProblem(ceres::Problem* problem) {
               << " ms, cost " << summary.initial_cost << " -> " << summary.final_cost << " ("
               << 100.0 * (summary.initial_cost - summary.final_cost) / summary.initial_cost << "%)" << std::endl;
   }
+
+  if (config.loop_closing_debug) { std::cout << summary.FullReport() << std::endl; }
 
   return summary.IsSolutionUsable();
 }
