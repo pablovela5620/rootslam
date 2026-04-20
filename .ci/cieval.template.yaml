@@ -80,6 +80,7 @@ build:
           mv map/tracking.csv $RESDIR/tracking.csv
           mv map/map.json $RESDIR/map.json
           mv timing.tracking.$DATASET.csv $RESDIR/timing.csv
+          mv kf_timing.tracking.$DATASET.csv $RESDIR/kf_timing.csv
           mv stats_vio.json $RESDIR/stats_vio.json
           mv output.$DATASET.log $RESDIR/output.log
           tree $RESDIR
