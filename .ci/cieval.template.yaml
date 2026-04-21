@@ -33,7 +33,7 @@ build:
   stage: prepare
   extends: .ccache
   script:
-    - time cmake --preset=release -DBASALT_INSTANTIATIONS_DOUBLE=off
+    - time cmake --preset=development -DBASALT_INSTANTIATIONS_DOUBLE=off
     - time cmake --build build --target basalt_vio
     - rm -f $GET_DATASET_LOCKFILE
   artifacts:
@@ -67,12 +67,13 @@ build:
     - echo $FINAL_DS_PATH | tee FINAL_DS_PATH.txt
     - echo $DS_PATH | tee DS_PATH.txt
     - ls
+    - ulimit -c unlimited
     - |
       set -euo pipefail
       for i in $(seq 1 $REPETITIONS)
       do
           echo "Run repetition $i / $REPETITIONS"
-          ./build/basalt_vio --save-times 1 --show-gui 0 --deterministic $DETERMINISTIC --num-threads $NUM_THREADS --dataset-path $FINAL_DS_PATH --dataset-type $DS_FORMAT --cam-calib $DS_CALIB --config-path $DS_CONFIG --save-trajectory euroc --save-trajectory-fn tracking.$DATASET.csv --map-export-path map 2>&1 | tee output.$DATASET.log
+          gdb -batch -ex run -ex bt --args ./build/basalt_vio --save-times 1 --show-gui 0 --deterministic $DETERMINISTIC --num-threads $NUM_THREADS --dataset-path $FINAL_DS_PATH --dataset-type $DS_FORMAT --cam-calib $DS_CALIB --config-path $DS_CONFIG --save-trajectory euroc --save-trajectory-fn tracking.$DATASET.csv --map-export-path map 2>&1 | tee output.$DATASET.log
           ls
           export RESDIR=$RESULTS_DIR/$CI_COMMIT_SHORT_SHA-$i/$DATASET
           echo "Results will be saved in $RESDIR"
@@ -92,8 +93,10 @@ build:
     - export DS_PATH=$(cat DS_PATH.txt)
     - if [ "$FINAL_DS_PATH" != "$DS_PATH" ]; then echo "Deleting $FINAL_DS_PATH"; rm -rf $FINAL_DS_PATH; fi
   artifacts:
+    when: always
     paths:
       - $RESULTS_DIR
+      - core
     expire_in: 52 weeks
     name: "$RESULTS_DIR-$DATASET"
 
