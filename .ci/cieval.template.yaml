@@ -73,7 +73,7 @@ build:
       for i in $(seq 1 $REPETITIONS)
       do
           echo "Run repetition $i / $REPETITIONS"
-          OPENBLAS_NUM_THREADS=1 gdb -batch -ex run -ex bt --args ./build/basalt_vio --save-times 1 --show-gui 0 --deterministic $DETERMINISTIC --num-threads $NUM_THREADS --dataset-path $FINAL_DS_PATH --dataset-type $DS_FORMAT --cam-calib $DS_CALIB --config-path $DS_CONFIG --save-trajectory euroc --save-trajectory-fn tracking.$DATASET.csv --map-export-path map 2>&1 | tee output.$DATASET.log
+          OPENBLAS_NUM_THREADS=1 gdb -batch -ex run -ex bt --args ./build/basalt_vio --save-times 1 --show-gui 0 --deterministic $DETERMINISTIC --num-threads $NUM_THREADS --dataset-path $FINAL_DS_PATH --dataset-type $DS_FORMAT --cam-calib $DS_CALIB --config-path $DS_CONFIG --save-trajectory euroc --save-trajectory-fn tracking.$DATASET.csv --map-export-path map 2>&1 | tee output.$DATASET.log || true
           ls
           export RESDIR=$RESULTS_DIR/$CI_COMMIT_SHORT_SHA-$i/$DATASET
           echo "Results will be saved in $RESDIR"
