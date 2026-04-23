@@ -37,9 +37,18 @@ build:
     - time cmake --build build --target basalt_vio
     - rm -f $GET_DATASET_LOCKFILE
     - ls /scratch
+    - pushd /scratch/rootba
+    - git checkout fixed-intrinsics
+    - git submodule update --init --recursive
+    - ./scripts/build-external.sh
+    - ./scripts/build-rootba.sh
+    - popd
+    - cp /scratch/rootba/bin/bal build/bal
+    - ls build
   artifacts:
     paths:
       - build/basalt_vio
+      - build/bal
     expire_in: 52 weeks
 
 .run-dataset:
@@ -75,15 +84,17 @@ build:
           echo "Run repetition $i / $REPETITIONS"
           OPENBLAS_NUM_THREADS=1 gdb -batch -ex run -ex bt --args ./build/basalt_vio --save-times 1 --show-gui 0 --deterministic $DETERMINISTIC --num-threads $NUM_THREADS --dataset-path $FINAL_DS_PATH --dataset-type $DS_FORMAT --cam-calib $DS_CALIB --config-path $DS_CONFIG --save-trajectory euroc --save-trajectory-fn tracking.$DATASET.csv --map-export-path map 2>&1 | tee output.$DATASET.log || true
           ls
+          ./build/bal --input map/map.json --solver-type SQUARE_ROOT --calibration-file $DS_CALIB --no-normalize --residual-robust-norm HUBER --no-use-double --optimized-cost ERROR_VALID --output-optimized-path map/optimized_tracking.csv 2>&1 | tee output.$DATASET.bal.log
           export RESDIR=$RESULTS_DIR/$CI_COMMIT_SHORT_SHA-$i/$DATASET
           echo "Results will be saved in $RESDIR"
           mkdir -p $RESDIR
-          mv map/tracking.csv $RESDIR/tracking.csv
+          mv map/optimized_tracking.csv $RESDIR/tracking.csv
           mv map/map.json $RESDIR/map.json
           mv timing.tracking.$DATASET.csv $RESDIR/timing.csv
           mv kf_timing.tracking.$DATASET.csv $RESDIR/kf_timing.csv
           mv stats_vio.json $RESDIR/stats_vio.json
           mv output.$DATASET.log $RESDIR/output.log
+          mv output.$DATASET.bal.log $RESDIR/output_bal.log
           tree $RESDIR
       done
     - echo "Runs completed"
