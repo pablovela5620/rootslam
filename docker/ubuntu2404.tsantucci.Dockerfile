@@ -10,6 +10,7 @@ RUN apt update && \
     gcc \
     g++ \
     cmake \
+    make \
     mold \
     git \
     clang-format-20 \
