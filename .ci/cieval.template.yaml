@@ -39,6 +39,8 @@ build:
     - ls /scratch
     - pushd /scratch/rootba
     - git checkout fixed-intrinsics
+    - rm -rf external/ceres-solver/
+    - git submodule sync
     - git submodule update --init --recursive
     - ./scripts/build-external.sh
     - ./scripts/build-rootba.sh
