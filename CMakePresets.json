@@ -44,8 +44,7 @@
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "BASALT_BUILD_SHARED_LIBRARY_ONLY": "off",
-        "MINIGLOG": "on"
+        "BASALT_BUILD_SHARED_LIBRARY_ONLY": "off"
       }
     },
     {
@@ -65,8 +64,7 @@
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "BASALT_BUILD_SHARED_LIBRARY_ONLY": "off",
-        "MINIGLOG": "on"
+        "BASALT_BUILD_SHARED_LIBRARY_ONLY": "off"
       }
     },
     {

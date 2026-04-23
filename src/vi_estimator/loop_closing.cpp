@@ -691,11 +691,6 @@ bool LoopClosing::closeLoop(const LoopClosingInput::Ptr& loop_closing_input,
   VectorOfConstraints constraints;
   buildPoseGraph(loop_detection_result, loop_closure_decision, map_of_poses, constraints);
 
-  if (config.loop_closing_debug) {
-    std::cout << "[LC]  Pose graph: " << map_of_poses.size() << " poses, " << constraints.size() << " constraints"
-              << std::endl;
-  }
-
   ceres::Problem problem;
   buildCeresProblem(constraints, loop_closure_decision->active_keyframes, &map_of_poses, &problem);
 
@@ -734,6 +729,11 @@ void LoopClosing::buildPoseGraph(const LoopDetectionResult::Ptr& loop_detection_
 
   // TODO: check that i'm only adding each edge once
 
+  size_t spanning_tree_edges = 0;
+  size_t past_lc_edges = 0;
+  size_t covisibility_edges = 0;
+  size_t current_lc_edges = 0;
+
   // Add the constraints based on the relative poses of the spanning tree
   FrameId spanning_tree_root = covisibility_graph.getRoot();
   for (const auto& [kf_id, T_w_i] : keyframe_poses) {
@@ -757,6 +757,7 @@ void LoopClosing::buildPoseGraph(const LoopDetectionResult::Ptr& loop_detection_
     c.t_be = relative_pose;
     c.information = Eigen::Matrix<double, 6, 6>::Identity();
     constraints.push_back(c);
+    spanning_tree_edges++;
   }
 
   // Add the past loop closure constraints
@@ -775,6 +776,7 @@ void LoopClosing::buildPoseGraph(const LoopDetectionResult::Ptr& loop_detection_
         c.t_be = relative_pose;
         c.information = Eigen::Matrix<double, 6, 6>::Identity();
         constraints.push_back(c);
+        past_lc_edges++;
       }
     }
   }
@@ -807,6 +809,7 @@ void LoopClosing::buildPoseGraph(const LoopDetectionResult::Ptr& loop_detection_
     c.t_be = relative_pose;
     c.information = Eigen::Matrix<double, 6, 6>::Identity();
     constraints.push_back(c);
+    covisibility_edges++;
   }
 
   // Add the current loop closure constraints
@@ -823,7 +826,32 @@ void LoopClosing::buildPoseGraph(const LoopDetectionResult::Ptr& loop_detection_
     c.t_be = relative_pose;
     c.information = Eigen::Matrix<double, 6, 6>::Identity();
     constraints.push_back(c);
+    current_lc_edges++;
   }
+
+  // remove duplicate constraints (if any)
+  std::set<std::pair<FrameId, FrameId>> unique_edges;
+  VectorOfConstraints unique_constraints;
+  for (const auto& constraint : constraints) {
+    std::pair<FrameId, FrameId> edge = std::minmax(constraint.id_begin, constraint.id_end);
+    if (unique_edges.find(edge) == unique_edges.end()) {
+      unique_edges.insert(edge);
+      unique_constraints.push_back(constraint);
+    }
+  }
+
+  std::cout << "[LC]  Pose graph before removing duplicates: " << constraints.size() << " constraints." << std::endl;
+
+  constraints = std::move(unique_constraints);
+
+  std::cout << "[LC]  Pose graph built:"
+            << "\n        Poses            : " << map_of_poses.size()
+            << "\n        Total constraints: " << constraints.size()
+            << "\n          Spanning tree  : " << spanning_tree_edges
+            << "\n          Past LC        : " << past_lc_edges << "\n          Covisibility   : " << covisibility_edges
+            << "\n          Current LC     : " << current_lc_edges << "\n        Current KF       : " << curr_kf_id
+            << "\n        Candidate KF     : " << loop_detection_result->candidate_kf_id
+            << "\n        Island size      : " << loop_detection_result->candidates_island.size() << std::endl;
 }
 
 void LoopClosing::buildCeresProblem(const VectorOfConstraints& constraints, const std::set<FrameId>& active_keyframes,
