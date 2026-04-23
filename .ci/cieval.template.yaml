@@ -68,7 +68,6 @@ build:
     - echo $FINAL_DS_PATH | tee FINAL_DS_PATH.txt
     - echo $DS_PATH | tee DS_PATH.txt
     - ls
-    - ulimit -c unlimited
     - |
       set -euo pipefail
       for i in $(seq 1 $REPETITIONS)
@@ -94,10 +93,8 @@ build:
     - export DS_PATH=$(cat DS_PATH.txt)
     - if [ "$FINAL_DS_PATH" != "$DS_PATH" ]; then echo "Deleting $FINAL_DS_PATH"; rm -rf $FINAL_DS_PATH; fi
   artifacts:
-    when: always
     paths:
       - $RESULTS_DIR
-      - core
     expire_in: 52 weeks
     name: "$RESULTS_DIR-$DATASET"
 

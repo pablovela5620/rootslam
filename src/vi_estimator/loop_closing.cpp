@@ -92,6 +92,7 @@ void LoopClosing::processingLoop() {
         loop_closing_visualization_data->loop_closed = false;
         out_lc_vis_queue->push(loop_closing_visualization_data);
       }
+      notify_lc_finished = true;
       continue;
     }
 

@@ -225,12 +225,6 @@ void MapDatabase::handle_loop_detection(LoopDetectionResult::Ptr& loop_detection
   covisibility_graph.addLoopClosure(loop_detection_result->candidate_kf_id, loop_detection_result->current_kf_id);
 
   merge_loop_landmarks(loop_detection_result);
-
-  if (sync_lc_finished != nullptr) {
-    std::lock_guard<std::mutex> lk(sync_lc_finished->m);
-    sync_lc_finished->ready = true;
-    sync_lc_finished->cvar.notify_one();
-  }
 }
 
 void MapDatabase::handle_loop_closure(LoopClosureResult::Ptr& loop_closure_result) {
