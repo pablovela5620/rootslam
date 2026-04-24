@@ -388,10 +388,7 @@ bool LoopClosing::validateCandidate(const LoopClosingInput::Ptr& loop_closing_in
     LandmarkId candidate_lm_id = match.candidate_kf_kpt_id;
     LandmarkId curr_lm_id = match.current_kf_kpt_id;
 
-    auto it = loop_detection_result->lm_fusions.find(candidate_lm_id);
-    if (it == loop_detection_result->lm_fusions.end()) {
-      loop_detection_result->lm_fusions.emplace(curr_lm_id, candidate_lm_id);
-    }
+    loop_detection_result->lm_fusions[curr_lm_id] = candidate_lm_id;
 
     TimeCamId curr_tcid{curr_kf_id, match.current_kf_cam};
     loop_detection_result->curr_kf_obs[curr_tcid][curr_lm_id] =

@@ -263,7 +263,10 @@ void MapDatabase::merge_loop_landmarks(const LoopDetectionResult::Ptr& loop_dete
 
   for (const auto& [curr_tcid, lm_obs_map] : loop_detection_result->curr_kf_obs) {
     for (const auto& [curr_lm_id, obs] : lm_obs_map) {
-      LandmarkId host_lm_id = loop_detection_result->lm_fusions[curr_lm_id];
+      auto fusion_it = loop_detection_result->lm_fusions.find(curr_lm_id);
+      if (fusion_it == loop_detection_result->lm_fusions.end()) { continue; }
+      // TODO@tsantucci: rename host to candidate
+      LandmarkId host_lm_id = fusion_it->second;
 
       if (!map.landmarkExists(host_lm_id)) { continue; }
 
@@ -296,6 +299,9 @@ void MapDatabase::merge_loop_landmarks(const LoopDetectionResult::Ptr& loop_dete
 
     // The host landmark might have been already merged into another one
     if (!map.landmarkExists(host_lm_id)) { continue; }
+
+    // The curr landmark might have been merged into another one in a previous iteration
+    if (!map.landmarkExists(curr_lm_id)) { continue; }
 
     // Before merging, update the covisibility graph
     const auto& host_lm = map.getLandmark(host_lm_id);
