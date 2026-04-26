@@ -119,6 +119,9 @@ struct TimeStatsWithInterpolation : public TimeStats {
 			if (!isTimingTitleValid(name))
 				return;
 
+			if (timing_titles[timings.size()] == nullptr)
+				return;
+
 			const std::string_view expected(timing_titles[timings.size()]);
 			if (expected != name) {
 				int current_idx = -1;
