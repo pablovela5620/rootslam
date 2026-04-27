@@ -282,5 +282,7 @@ class LoopClosing {
 
   std::shared_ptr<std::thread> processing_thread;
   LoopClosingVisualizationData::Ptr loop_closing_visualization_data;
+
+  bool shutting_down = false;
 };
 }  // namespace basalt

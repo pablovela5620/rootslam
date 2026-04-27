@@ -404,6 +404,7 @@ void MapDatabase::initialize() {
             } else if constexpr (std::is_same_v<T, IslandRequest::Ptr>) {
               read_island_req(m->keyframe, m->num_neighbors);
             } else if constexpr (std::is_same_v<T, StopMsg>) {
+              if (out_island_res_queue) out_island_res_queue->push(nullptr);
               running = false;
             }
           },
@@ -438,6 +439,7 @@ void MapDatabase::initialize() {
               }
               if (out_vis_queue) out_vis_queue->push(nullptr);
               if (out_opt_poses_queue) out_opt_poses_queue->push(nullptr);
+              if (out_lc_dec_res_queue) out_lc_dec_res_queue->push(nullptr);
               running = false;
             }
           },

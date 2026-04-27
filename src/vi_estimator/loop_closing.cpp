@@ -65,6 +65,8 @@ void LoopClosing::processingLoop() {
       break;
     }
 
+    if (shutting_down) continue;
+
     HashBowVector bow_vector;
     indexKeyframe(loop_closing_input, bow_vector);
 
@@ -84,6 +86,11 @@ void LoopClosing::processingLoop() {
 
     LoopClosureDecision::Ptr loop_closure_decision;
     in_lc_dec_res_queue.pop(loop_closure_decision);
+
+    if (loop_closure_decision == nullptr) {
+      shutting_down = true;
+      continue;
+    }
 
     loop_closing_input->input_images->addKeyframeTime("lc_loop_decision_received");
 
@@ -183,7 +190,7 @@ bool LoopClosing::detectLoop(const LoopClosingInput::Ptr& loop_closing_input, co
   for (const auto& candidate_kf : candidate_kfs) {
     loop_detected =
         validateCandidate(loop_closing_input, candidate_kf, curr_kf_kpts, loop_detection_result, cumulative_times);
-    if (loop_detected) break;
+    if (loop_detected || shutting_down) break;
   }
 
   cumulative_times[0] += validation_start_ts;
@@ -259,6 +266,11 @@ bool LoopClosing::validateCandidate(const LoopClosingInput::Ptr& loop_closing_in
 
   auto map_island = std::make_shared<IslandResponse>();
   in_island_res_queue.pop(map_island);
+
+  if (map_island == nullptr) {
+    shutting_down = true;
+    return false;
+  }
 
   cumulative_times[1] += t.elapsed_ns();
   t.reset();
