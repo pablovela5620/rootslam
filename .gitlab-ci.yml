@@ -321,7 +321,7 @@ report:
     - cat timing-results/README.md >> report.md
     - echo "" >> report.md
     - echo "## Tables" >> report.md
-    - /xrtmet/batch.py timing-results /xrtmet/test/data/targets --metrics timing memory --highlights bold --save_file timing-batch.json >> report.md
+    - /xrtmet/batch.py timing-results /xrtmet/test/data/targets --metrics atec rtec timing memory --highlights bold --save_file timing-batch.json >> report.md
     - mv timing-batch.json timing-results/
     - echo "" >> report.md
     - echo "## Stats" >> report.md
