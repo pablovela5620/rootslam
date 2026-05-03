@@ -48,7 +48,7 @@ void MapDatabase::write_map_stamp(basalt::MapStamp::Ptr& map_stamp) {
     out_vis_queue->push(map_visual_data);
   }
 
-  if (map.getKeyframes().size() > static_cast<size_t>(config.map_max_keyframes)) {
+  if (config.map_enable_culling && map.getKeyframes().size() > static_cast<size_t>(config.map_max_keyframes)) {
     if (config.map_debug)
       std::cout << "[MDB] Number of keyframes in the map: " << map.getKeyframes().size()
                 << ". Starting culling process." << std::endl;
