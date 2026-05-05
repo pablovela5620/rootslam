@@ -115,7 +115,7 @@
         "config.debug1": false,
         "config.debug2": false,
         "config.debug3": false,
-        "config.causal_evaluation": false,
+        "config.causal_evaluation": true,
         "config.cameras_to_export": [0],
         "config.mapper_use_lm": true,
         "config.mapper_lm_lambda_min": 1e-32,

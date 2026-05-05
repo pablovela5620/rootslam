@@ -123,6 +123,6 @@
         "config.debug1": false,
         "config.debug2": false,
         "config.debug3": false,
-        "config.causal_evaluation": false
+        "config.causal_evaluation": true
     }
 }

@@ -82,23 +82,23 @@ build:
       do
           echo "Run repetition $i / $REPETITIONS"
           OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 gdb -batch -ex run -ex bt --args ./build/basalt_vio --save-times 1 --show-gui 0 --deterministic $DETERMINISTIC --num-threads $NUM_THREADS --dataset-path $FINAL_DS_PATH --dataset-type $DS_FORMAT --cam-calib $DS_CALIB --config-path $DS_CONFIG --save-trajectory euroc --save-trajectory-fn tracking.$DATASET.csv --map-export-path map 2>&1 | tee output.$DATASET.log || true
-          ./build/bal --input map/map.json --solver-type SQUARE_ROOT --calibration-file $DS_CALIB --no-normalize --residual-robust-norm HUBER --no-use-double --optimized-cost ERROR_VALID --output-optimized-path map/optimized_tracking.csv --num-threads 1 --min-obs-per-kf 20 2>&1 | tee output.$DATASET.bal.log
+          ./build/bal --input map/map.json --solver-type SQUARE_ROOT --calibration-file $DS_CALIB --no-normalize --residual-robust-norm HUBER --no-use-double --optimized-cost ERROR_VALID --output-optimized-path map/optimized_tracking.csv --min-obs-per-kf 20 2>&1 | tee output.$DATASET.bal.log
           ls
+          source /xrtmet/.venv-docker/bin/activate
+          /xrtmet/ops/merge_frames_keyframes.py tracking.$DATASET.csv map/tracking.csv f_tracking.csv
+          /xrtmet/ops/merge_frames_keyframes.py tracking.$DATASET.csv map/optimized_tracking.csv f_optimized_tracking.csv
           export RESDIR=$RESULTS_DIR/$CI_COMMIT_SHORT_SHA-$i/$DATASET
           export RESDIRBA=$RESULTS_DIR/$CI_COMMIT_SHORT_SHA-ba-$i/$DATASET
           echo "Results will be saved in $RESDIR"
           mkdir -p $RESDIR
-          mv map/tracking.csv $RESDIR/tracking.csv
+          mv f_tracking.csv $RESDIR/tracking.csv
           mv timing.tracking.$DATASET.csv $RESDIR/timing.csv
-          mv kf_timing.tracking.$DATASET.csv $RESDIR/kf_timing.csv
           mv stats_vio.json $RESDIR/stats_vio.json
           mv output.$DATASET.log $RESDIR/output.log
           echo "Full bundle adjustment results will be saved in $RESDIRBA"
           mkdir -p $RESDIRBA
-          mv map/map.json $RESDIRBA/map.json
-          mv map/optimized_tracking.csv $RESDIRBA/tracking.csv
+          mv f_optimized_tracking.csv $RESDIRBA/tracking.csv
           cp $RESDIR/timing.csv $RESDIRBA/timing.csv
-          cp $RESDIR/kf_timing.csv $RESDIRBA/kf_timing.csv
           cp $RESDIR/stats_vio.json $RESDIRBA/stats_vio.json
           mv output.$DATASET.bal.log $RESDIRBA/output_bal.log
           tree $RESDIR
