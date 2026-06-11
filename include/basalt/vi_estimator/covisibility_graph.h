@@ -78,6 +78,8 @@ class CovisibilityGraph {
 
   CovisibilityGraph copyPoseGraph() const;
 
+  void saveJson(const std::string& file_path) const;
+
   void print_stats() const;
 
  private:

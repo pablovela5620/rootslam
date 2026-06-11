@@ -1,4 +1,7 @@
 #include <basalt/vi_estimator/covisibility_graph.h>
+#include <filesystem>
+#include <fstream>
+#include <nlohmann/json.hpp>
 
 namespace basalt {
 
@@ -292,6 +295,36 @@ void CovisibilityGraph::print_stats() const {
   // Each loop closure is counted twice
   total_loop_closures /= 2;
   std::cout << "  Number of loop closures: " << total_loop_closures << std::endl;
+}
+
+void CovisibilityGraph::saveJson(const std::string& file_path) const {
+  std::filesystem::create_directories(std::filesystem::path(file_path).parent_path());
+  std::ofstream f(file_path);
+
+  nlohmann::json j;
+
+  nlohmann::json high_cov = nlohmann::json::array();
+  for (const auto& e : high_covisibility_edges_) {
+    high_cov.push_back({e.id1, e.id2});
+  }
+  j["high_covisibility_edges"] = high_cov;
+
+  nlohmann::json lc = nlohmann::json::array();
+  for (const auto& [id1, neighbors] : loop_closures_) {
+    for (const auto& id2 : neighbors) {
+      if (id1 < id2) { lc.push_back({id1, id2}); }
+    }
+  }
+  j["loop_closure_edges"] = lc;
+
+  nlohmann::json tree = nlohmann::json::array();
+  for (const auto& [id, node] : tree_) {
+    if (node.parent != invalid()) { tree.push_back({node.parent, id}); }
+  }
+  j["spanning_tree_edges"] = tree;
+
+  f << j.dump(2);
+  f.close();
 }
 
 }  // namespace basalt

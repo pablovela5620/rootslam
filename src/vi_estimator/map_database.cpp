@@ -436,6 +436,7 @@ void MapDatabase::initialize() {
               if (!map_export_path.empty()) {
                 saveEuroc(map_export_path + "/tracking.csv");
                 saveJson(map_export_path + "/map.json");
+                covisibility_graph.saveJson(map_export_path + "/covisibility_graph.json");
               }
               if (out_vis_queue) out_vis_queue->push(nullptr);
               if (out_opt_poses_queue) out_opt_poses_queue->push(nullptr);
