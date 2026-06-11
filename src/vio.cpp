@@ -226,6 +226,7 @@ struct basalt_vio_ui : vis::VIOUIBase {
   std::condition_variable cvar;
   bool step_by_step = false;
   bool deterministic = false;
+  bool deterministic_mapper = false;
   bool save_times = false;
   size_t max_frames = 0;
   size_t max_gui_frames = 10000;
@@ -342,6 +343,7 @@ struct basalt_vio_ui : vis::VIOUIBase {
     app.add_option("--use-double", use_double, "Use double not float.");
     app.add_option("--deterministic", deterministic, "Make the pipeline output reproducible (some performance impact)");
     app.add_option("--max-frames", max_frames, "Limit number of frames to process from dataset (0 means unlimited)");
+    app.add_option("--deterministic-mapper", deterministic_mapper, "Make the mapper synchronous");
     app.add_option("--max-gui-frames", max_gui_frames, "Limit UI frames in memory (unlimited: 0, default: 10000)");
     app.add_option("--export-colmap-path", colmap_export_path, "Path to export COLMAP files.");
     app.add_option("--map-export-path", map_export_path, "Path to export the map.");
@@ -435,7 +437,7 @@ struct basalt_vio_ui : vis::VIOUIBase {
       vio->opt_flow_depth_guess_queue = &opt_flow->input_depth_queue;
       vio->opt_flow_state_queue = &opt_flow->input_state_queue;
       vio->opt_flow_lm_bundle_queue = &opt_flow->input_lm_bundle_queue;
-      if (deterministic) {
+      if (deterministic_mapper) {
         if (config.enable_loop_closing) { vio->sync_lc_finished = &sync_lc_finished; }
         vio->sync_map_stamp = &sync_map_stamp;
         vio->sync_map_marg = &sync_map_marg;
@@ -449,7 +451,7 @@ struct basalt_vio_ui : vis::VIOUIBase {
       vio->out_map_read_queue = &map_db->read_queue;
       map_db->out_covi_res_queue = &vio->in_covi_res_queue;
       if (config.enable_loop_closing) map_db->out_opt_poses_queue = &out_opt_poses_queue;
-      if (deterministic) {
+      if (deterministic_mapper) {
         map_db->sync_map_stamp = &sync_map_stamp;
         map_db->sync_map_marg = &sync_map_marg;
         if (config.enable_loop_closing) map_db->sync_lc_finished = &sync_lc_finished;
@@ -459,14 +461,14 @@ struct basalt_vio_ui : vis::VIOUIBase {
     if (config.enable_loop_closing) {
       loop_closing = std::make_shared<basalt::LoopClosing>(config, calib);
       loop_closing->initialize();
-      loop_closing->deterministic = deterministic;
+      loop_closing->deterministic = deterministic_mapper;
       loop_closing->out_map_read_queue = &map_db->read_queue;
       map_db->out_lc_dec_res_queue = &loop_closing->in_lc_dec_res_queue;
       map_db->out_island_res_queue = &loop_closing->in_island_res_queue;
       map_db->out_culled_map_data_queue = &loop_closing->in_culled_map_data_queue;
       loop_closing->out_map_write_queue = &map_db->write_queue;
       vio->out_opt_flow_queue_loop_closing = &loop_closing->in_optical_flow_queue;
-      if (deterministic) { loop_closing->sync_lc_finished = &sync_lc_finished; }
+      if (deterministic_mapper) { loop_closing->sync_lc_finished = &sync_lc_finished; }
       if (show_gui) loop_closing->out_lc_vis_queue = &out_lc_vis_queue;
     }
 
