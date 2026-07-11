@@ -130,7 +130,7 @@ void LoopClosing::indexKeyframe(const LoopClosingInput::Ptr& loop_closing_input,
     KeypointsData kd;
     std::vector<KeypointId> keypoint_ids;
 
-    const basalt::ManagedImage<uint16_t>& man_img_raw = *loop_closing_input->input_images->img_data[cam_id].img;
+    const basalt::ManagedImage<uint16_t>& man_img_raw = *loop_closing_input->img_data[cam_id].img;
     const basalt::Image<const uint16_t> img_raw = man_img_raw.Reinterpret<const uint16_t>();
 
     // can optimize here by only computing descriptors for the new kpts
@@ -341,7 +341,7 @@ bool LoopClosing::validateCandidate(const LoopClosingInput::Ptr& loop_closing_in
 
       if (out_lc_vis_queue) { loop_closing_visualization_data->reprojected_keypoints[i] = reprojected_keypoints; }
 
-      const basalt::ManagedImage<uint16_t>& img = *loop_closing_input->input_images->img_data[cam_id].img;
+      const basalt::ManagedImage<uint16_t>& img = *loop_closing_input->img_data[cam_id].img;
       for (const auto& kp : reprojected_keypoints) {
         Eigen::aligned_vector<Vec2> detected_kpts;
         Vec2 match_pos;

@@ -53,6 +53,12 @@ struct LoopClosingInput {
   std::vector<Keypoints> keypoints;
   std::vector<Keypoints> landmarks;
   OpticalFlowInput::Ptr input_images;
+
+  // Own view of the frame images, sharing the same underlying ManagedImage
+  // buffers as input_images->img_data. Kept separate so the visualization
+  // thread can free input_images->img_data (shared object) without racing the
+  // loop-closing thread's descriptor computation on these images.
+  std::vector<ImageData> img_data;
 };
 
 struct VioVisualizationData {

@@ -794,6 +794,7 @@ bool SqrtKeypointVioEstimator<Scalar_>::measure(const OpticalFlowResult::Ptr& op
     if (out_opt_flow_queue_loop_closing) {
       LoopClosingInput::Ptr loop_closing_input = std::make_shared<LoopClosingInput>();
       loop_closing_input->input_images = opt_flow_meas->input_images;
+      loop_closing_input->img_data = opt_flow_meas->input_images->img_data;  // shares image buffers, own vector
       loop_closing_input->t_ns = opt_flow_meas->t_ns;
 
       loop_closing_input->landmarks.resize(NUM_CAMS);
