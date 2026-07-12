@@ -1028,7 +1028,7 @@ bool VIOUIBase::do_toggle_blocks() {
   if (child_count == 0) return show_blocks;
 
   if (!show_blocks) {
-    plot_display->SetBounds(0.0, 0.4, UI_WIDTH, 1.0);
+    plot_display->SetBounds(UI_BOTTOM, 0.4, UI_WIDTH, 1.0);
     return show_blocks;
   }
 
@@ -1041,8 +1041,8 @@ bool VIOUIBase::do_toggle_blocks() {
 
   auto X_ATTACH = pangolin::Attach::Pix(xmax);
   auto Y_ATTACH = pangolin::Attach::Pix(ymax);
-  blocks_display->SetBounds(0.0, Y_ATTACH, UI_WIDTH, X_ATTACH);
-  plot_display->SetBounds(0.0, 0.4, X_ATTACH, 1.0);
+  blocks_display->SetBounds(UI_BOTTOM, Y_ATTACH, UI_WIDTH, X_ATTACH);
+  plot_display->SetBounds(UI_BOTTOM, 0.4, X_ATTACH, 1.0);
 
   return show_blocks;
 }
@@ -1055,7 +1055,7 @@ bool VIOUIBase::do_toggle_similar_keyframes() {
   if (child_count == 0) return show_similar_keyframes;
 
   if (!show_similar_keyframes) {
-    plot_display->SetBounds(0.0, 0.4, UI_WIDTH, 1.0);
+    plot_display->SetBounds(UI_BOTTOM, 0.4, UI_WIDTH, 1.0);
     return show_similar_keyframes;
   }
 
@@ -1068,8 +1068,8 @@ bool VIOUIBase::do_toggle_similar_keyframes() {
 
   auto X_ATTACH = pangolin::Attach::Pix(xmax * 2 - UI_WIDTH_PIX);
   auto Y_ATTACH = pangolin::Attach::Pix(ymax);
-  similar_keyframes_display->SetBounds(0.0, Y_ATTACH, UI_WIDTH, X_ATTACH);
-  plot_display->SetBounds(0.0, 0.4, X_ATTACH, 1.0);
+  similar_keyframes_display->SetBounds(UI_BOTTOM, Y_ATTACH, UI_WIDTH, X_ATTACH);
+  plot_display->SetBounds(UI_BOTTOM, 0.4, X_ATTACH, 1.0);
 
   return show_similar_keyframes;
 }

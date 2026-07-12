@@ -764,12 +764,13 @@ struct basalt_vio_ui : vis::VIOUIBase {
       blocks_view->extern_draw_function = [this](View& /*v*/) { draw_blocks_overlay(); };
       const int DEFAULT_W = 480;
       blocks_display = &pangolin::CreateDisplay();
-      blocks_display->SetBounds(0.0, 0.6, UI_WIDTH, pangolin::Attach::Pix(UI_WIDTH_PIX + DEFAULT_W));
+      blocks_display->SetBounds(UI_BOTTOM, 0.6, UI_WIDTH, pangolin::Attach::Pix(UI_WIDTH_PIX + DEFAULT_W));
       blocks_display->AddDisplay(*blocks_view);
       blocks_display->Show(show_blocks);
 
       pangolin::CreatePanel("ui").SetBounds(UI_BOTTOM, 1.0, 0.0, UI_WIDTH);
       pangolin::CreatePanel("bottom_panel").SetBounds(0.0, UI_BOTTOM, 0.0, 1.0);
+      pangolin::Display("bottom_panel").zorder = 2;
       int& show_frame_ref = const_cast<int&>(show_frame.Get());  // HACK: pangolin makes this difficult otherwise
       pangolin::AttachVar("bottom_panel.show_frame", show_frame_ref, 0, vio_dataset->get_image_timestamps().size() - 1);
       show_frame_bottom = pangolin::VarState::I().GetByName("bottom_panel.show_frame");
@@ -779,7 +780,7 @@ struct basalt_vio_ui : vis::VIOUIBase {
         draw_similar_keyframes_overlay(vio_dataset, timestamp_to_id);
       };
       similar_keyframes_display = &pangolin::CreateDisplay();
-      similar_keyframes_display->SetBounds(0.0, 0.6, UI_WIDTH, pangolin::Attach::Pix(UI_WIDTH_PIX + DEFAULT_W));
+      similar_keyframes_display->SetBounds(UI_BOTTOM, 0.6, UI_WIDTH, pangolin::Attach::Pix(UI_WIDTH_PIX + DEFAULT_W));
       similar_keyframes_display->AddDisplay(*similar_keyframes_view);
       similar_keyframes_display->Show(show_similar_keyframes);
 
