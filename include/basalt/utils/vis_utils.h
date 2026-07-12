@@ -231,6 +231,37 @@ void get_rect_containing_kps(const Keypoints& kpids, float& l, float& r, float& 
 
 bool is_selected(const Selection& selection, size_t n);
 
+/// Sliding window of map visualization data, keeping the most recent `window_size` entries.
+template <typename T>
+class VisMapWindow {
+  std::map<int64_t, T> vis_map;
+  size_t window_size = 5000;
+
+ public:
+  explicit VisMapWindow(size_t size = 5000) : window_size(size) {}
+
+  void add(int64_t t_ns, const T& ptr) {
+    vis_map[t_ns] = ptr;
+    while (vis_map.size() > window_size) vis_map.erase(vis_map.begin());
+  }
+
+  T find(int64_t t_ns) const {
+    auto it = vis_map.find(t_ns);
+    return it != vis_map.end() ? it->second : nullptr;
+  }
+
+  /// Most recent entry with timestamp <= t_ns, or nullptr if none is left in the window.
+  T find_at_or_before(int64_t t_ns) const {
+    auto it = vis_map.upper_bound(t_ns);
+    return it != vis_map.begin() ? std::prev(it)->second : nullptr;
+  }
+
+  template <typename Func>
+  void for_each(Func func) const {
+    for (const auto& [ts, vis] : vis_map) func(ts, vis);
+  }
+};
+
 class VisWindow {
   std::map<int64_t, VioVisualizationData::Ptr> vis_map;
   size_t window_size = 5000;

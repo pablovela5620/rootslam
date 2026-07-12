@@ -175,8 +175,8 @@ std::ostream& operator<<(std::ostream& os, const vit::TimeStats& s) {
 
 struct basalt_vio_ui : vis::VIOUIBase {
   std::unordered_map<int64_t, VioVisualizationData::Ptr> vis_map;
-  std::unordered_map<int64_t, MapDatabaseVisualizationData::Ptr> mapper_vis_map;
-  std::unordered_map<int64_t, LoopClosingVisualizationData::Ptr> loop_closing_vis_map;
+  vis::VisMapWindow<MapDatabaseVisualizationData::Ptr> mapper_vis_window;
+  vis::VisMapWindow<LoopClosingVisualizationData::Ptr> loop_closing_vis_window;
   VioDatasetPtr vio_dataset;
   int64_t start_t_ns = -1;
   size_t frame_count = 0;
@@ -424,6 +424,8 @@ struct basalt_vio_ui : vis::VIOUIBase {
     bool keep_images = false;
     size_t gui_frames = max_gui_frames == 0 ? frame_count : max_gui_frames;
     vis_window = vis::VisWindow(gui_frames, keep_images);
+    mapper_vis_window = vis::VisMapWindow<MapDatabaseVisualizationData::Ptr>(gui_frames);
+    loop_closing_vis_window = vis::VisMapWindow<LoopClosingVisualizationData::Ptr>(gui_frames);
 
     {
       vio = basalt::VioEstimatorFactory::getVioEstimator(config, calib, basalt::constants::g, use_imu, use_double);
@@ -532,17 +534,7 @@ struct basalt_vio_ui : vis::VIOUIBase {
           out_mapper_vis_queue.pop(data);
 
           if (data.get()) {
-            if (config.vio_erase_old_vis_data) {
-              int64_t last_frame_ts = vio_dataset->get_image_timestamps().at(show_frame);
-              for (auto it = mapper_vis_map.begin(); it != mapper_vis_map.end();) {
-                if (it->first < last_frame_ts) {
-                  it = mapper_vis_map.erase(it);
-                } else {
-                  ++it;
-                }
-              }
-            }
-            mapper_vis_map[data->t_ns] = data;
+            mapper_vis_window.add(data->t_ns, data);
           } else {
             break;
           }
@@ -559,7 +551,7 @@ struct basalt_vio_ui : vis::VIOUIBase {
             out_lc_vis_queue.pop(data);
 
             if (data.get()) {
-              loop_closing_vis_map[data->t_ns] = data;
+              loop_closing_vis_window.add(data->t_ns, data);
             } else {
               break;
             }
@@ -1150,25 +1142,13 @@ struct basalt_vio_ui : vis::VIOUIBase {
   }
 
   MapDatabaseVisualizationData::Ptr get_curr_map_vis_data() override {
-    int map_last_frame = show_frame;
-    while (true) {
-      if (map_last_frame == 0) return nullptr;
-      int64_t curr_ts = vio_dataset->get_image_timestamps().at(map_last_frame);
-      auto it = mapper_vis_map.find(curr_ts);
-      if (it != mapper_vis_map.end()) return it->second;
-      map_last_frame--;
-    }
+    int64_t curr_ts = vio_dataset->get_image_timestamps().at(show_frame);
+    return mapper_vis_window.find_at_or_before(curr_ts);
   }
 
   LoopClosingVisualizationData::Ptr get_curr_lc_vis_data() override {
-    int map_last_frame = show_frame;
-    while (true) {
-      if (map_last_frame == 0) return nullptr;
-      int64_t curr_ts = vio_dataset->get_image_timestamps().at(map_last_frame);
-      auto it = loop_closing_vis_map.find(curr_ts);
-      if (it != loop_closing_vis_map.end()) return it->second;
-      map_last_frame--;
-    }
+    int64_t curr_ts = vio_dataset->get_image_timestamps().at(show_frame);
+    return loop_closing_vis_window.find_at_or_before(curr_ts);
   }
 
   // Feed functions
