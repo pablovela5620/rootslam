@@ -775,6 +775,7 @@ struct basalt_vio_ui : vis::VIOUIBase {
       similar_keyframes_display->SetBounds(UI_BOTTOM, 0.6, UI_WIDTH, pangolin::Attach::Pix(UI_WIDTH_PIX + DEFAULT_W));
       similar_keyframes_display->AddDisplay(*similar_keyframes_view);
       similar_keyframes_display->Show(show_similar_keyframes);
+      similar_keyframes_display->zorder = 1;  // This allows the display to be on top, and zoom in on it
 
       menus.push_back(&trajectory_menu);
       menus_str.emplace_back("trajectory_menu");

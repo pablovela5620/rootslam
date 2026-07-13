@@ -1066,10 +1066,30 @@ bool VIOUIBase::do_toggle_similar_keyframes() {
   float ymax = -1;
   last_img_view->ImageToScreen(last_img_view->v, range.x.max, range.y.max, xmax, ymax);
 
-  auto X_ATTACH = pangolin::Attach::Pix(xmax * 2 - UI_WIDTH_PIX);
-  auto Y_ATTACH = pangolin::Attach::Pix(ymax);
-  similar_keyframes_display->SetBounds(UI_BOTTOM, Y_ATTACH, UI_WIDTH, X_ATTACH);
-  plot_display->SetBounds(UI_BOTTOM, 0.4, X_ATTACH, 1.0);
+  constexpr float MAX_WIDTH_FRAC = 0.6;
+  constexpr float PLOT_TOP = 0.4;
+  const pangolin::Viewport& base = pangolin::DisplayBase().v;
+
+  // The strip shows the two keyframe images side by side, so its content aspect is ~2x a single
+  // image. Size the container keeping it no taller than the plot panel (tops out at PLOT_TOP)
+  // and no wider than MAX_WIDTH_FRAC of the space to the right of the UI panel.
+  float strip_aspect = 2 * range.x.max / range.y.max;
+  float max_h = PLOT_TOP * base.h - UI_BOTTOM_PIX;
+  float max_w = (base.w - UI_WIDTH_PIX) * MAX_WIDTH_FRAC;
+  float strip_h = std::min(max_h, ymax - UI_BOTTOM_PIX);
+  float strip_w = strip_h * strip_aspect;
+  if (strip_w > max_w) {
+    strip_w = max_w;
+    strip_h = strip_w / strip_aspect;
+  }
+
+  float strip_bottom = UI_BOTTOM_PIX + (max_h - strip_h) / 2;
+
+  auto X_ATTACH = pangolin::Attach::Pix(UI_WIDTH_PIX + strip_w);
+  auto Y_BOTTOM = pangolin::Attach::Pix(strip_bottom);
+  auto Y_ATTACH = pangolin::Attach::Pix(strip_bottom + strip_h);
+  similar_keyframes_display->SetBounds(Y_BOTTOM, Y_ATTACH, UI_WIDTH, X_ATTACH);
+  plot_display->SetBounds(UI_BOTTOM, PLOT_TOP, X_ATTACH, 1.0);
 
   return show_similar_keyframes;
 }
