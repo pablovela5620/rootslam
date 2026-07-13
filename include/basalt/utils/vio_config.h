@@ -122,6 +122,7 @@ struct VioConfig {
   bool map_debug;
   int map_max_keyframes;
   int map_batch_cull_size;
+  bool map_show_covisibility;
 
   bool enable_loop_closing;
   int loop_closing_bow_num_bits;
@@ -153,11 +154,8 @@ struct VioConfig {
 
   bool causal_evaluation;
 
-  bool debug1;
   bool debug2;
   bool debug3;
-
-  std::vector<size_t> cameras_to_export;
 
   double mapper_obs_std_dev;
   double mapper_obs_huber_thresh;

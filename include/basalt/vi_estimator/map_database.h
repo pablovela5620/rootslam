@@ -26,9 +26,7 @@ struct SpatialDistributionCube {
     Vec3 mean = Vec3::Zero();
     Vec3 variance = Vec3::Zero();
 
-    for (const auto& point : points) {
-      mean += point;
-    }
+    for (const auto& point : points) { mean += point; }
     mean /= points.size();
 
     for (const auto& point : points) {
@@ -65,7 +63,6 @@ struct MapDatabaseVisualizationData {
   std::vector<int> covisibility_w;
   Eigen::aligned_vector<Eigen::Vector3d> spanning_tree;
   Eigen::aligned_vector<Eigen::Vector3d> loop_closures;
-  std::map<int, Eigen::aligned_vector<Eigen::Vector3d>> observations;
 };
 
 struct KeyframeScore {
@@ -176,9 +173,6 @@ class MapDatabase {
   SyncState* sync_lc_finished = nullptr;
   SyncState* sync_map_marg = nullptr;
   bool deterministic;
-
-  // TODO@tsantucci: remove this
-  std::shared_ptr<std::unordered_map<TimeCamId, std::string>> frame_id_to_name;
 
  private:
   std::string map_export_path;

@@ -509,7 +509,7 @@ void MapDatabase::computeMapVisualData() {
   }
 
   // show covisibility
-  if (config.debug1) {
+  if (config.map_show_covisibility) {
     for (const auto& [kf_id, _pose] : map.getKeyframes()) {
       if (!covisibility_graph.hasNode(kf_id)) continue;
 
@@ -546,18 +546,6 @@ void MapDatabase::computeMapVisualData() {
       Eigen::Vector3d p2 = map.getKeyframePose(other_kf_id).template cast<double>().translation();
       map_visual_data->loop_closures.emplace_back(p1);
       map_visual_data->loop_closures.emplace_back(p2);
-    }
-  }
-
-  // Show observations
-  if (config.debug1) {
-    for (const auto& [tcid, obs] : map.getKeyframeObs()) {
-      Eigen::Vector3d kf_pos = map.getKeyframePose(tcid.frame_id).template cast<double>().translation();
-      auto landmarks_3d = get_landmarks_3d_pos(obs);
-      for (const auto& lm_id : obs) {
-        map_visual_data->observations[lm_id].emplace_back(kf_pos);
-        map_visual_data->observations[lm_id].emplace_back(landmarks_3d[lm_id]);
-      }
     }
   }
 }

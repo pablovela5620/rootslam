@@ -160,18 +160,8 @@ bool VIOUIBase::toggle_similar_keyframes() {
 }
 
 void VIOUIBase::next_similar_kf() {
-  if (similar_kf_count) {
-    similar_kf_idx = (similar_kf_idx + 1) % similar_kf_count;
-  }
+  if (similar_kf_count) { similar_kf_idx = (similar_kf_idx + 1) % similar_kf_count; }
 }
-
-void VIOUIBase::next_island() {
-  if (islands_count) {
-    island_idx = (island_idx + 1) % islands_count;
-  }
-}
-
-void VIOUIBase::get_loop_detection_error() { print_loop_detection_error = true; }
 
 bool VIOUIBase::take_ltkf() {
   vio->takeLongTermKeyframe();
@@ -731,9 +721,7 @@ void VIOUIBase::draw_blocks_overlay() {
 void VIOUIBase::draw_similar_keyframes_overlay(const VioDatasetPtr& vio_dataset,
                                                tbb::concurrent_unordered_map<int64_t, int>& timestamp_to_id) {
   const LoopClosingVisualizationData::Ptr curr_lc_vis_data = get_curr_lc_vis_data();
-  if (curr_lc_vis_data == nullptr) {
-    return;
-  }
+  if (curr_lc_vis_data == nullptr) { return; }
 
   const std::vector<FrameId>& candidate_kfs = curr_lc_vis_data->island;
 
@@ -748,8 +736,7 @@ void VIOUIBase::draw_similar_keyframes_overlay(const VioDatasetPtr& vio_dataset,
     similar_kf_count = candidate_kfs.size();
   }
 
-  const std::vector<FrameId>& current_island = candidate_kfs;
-  TimeCamId candidate_tcid = TimeCamId{current_island[similar_kf_idx], static_cast<CamId>(candidate_kf_cam_id)};
+  TimeCamId candidate_tcid = TimeCamId{candidate_kfs[similar_kf_idx], static_cast<CamId>(candidate_kf_cam_id)};
   basalt::ManagedImage<uint16_t>::Ptr current_img = vio_dataset->get_image_data(t_ns)[recent_kf_cam_id].img;
   basalt::ManagedImage<uint16_t>::Ptr candidate_img =
       vio_dataset->get_image_data(candidate_tcid.frame_id)[candidate_tcid.cam_id].img;
@@ -770,13 +757,9 @@ void VIOUIBase::draw_similar_keyframes_overlay(const VioDatasetPtr& vio_dataset,
 
   glColor3ubv(BLUE);
   for (const auto& match : matches) {
-    if (match.current_kf_cam != static_cast<CamId>(recent_kf_cam_id)) {
-      continue;
-    }
+    if (match.current_kf_cam != static_cast<CamId>(recent_kf_cam_id)) { continue; }
 
-    if (candidate_keypoints.find(match.candidate_kf_kpt_id) == candidate_keypoints.end()) {
-      continue;
-    }
+    if (candidate_keypoints.find(match.candidate_kf_kpt_id) == candidate_keypoints.end()) { continue; }
 
     Eigen::Vector2f p1 = current_keypoints[match.current_kf_kpt_id].translation();
     Eigen::Vector2f p2 = candidate_keypoints[match.candidate_kf_kpt_id].translation();
@@ -795,13 +778,9 @@ void VIOUIBase::draw_similar_keyframes_overlay(const VioDatasetPtr& vio_dataset,
 
   glColor3ubv(GREEN);
   for (const auto& match : inlier_matches) {
-    if (match.current_kf_cam != static_cast<CamId>(recent_kf_cam_id)) {
-      continue;
-    }
+    if (match.current_kf_cam != static_cast<CamId>(recent_kf_cam_id)) { continue; }
 
-    if (candidate_keypoints.find(match.candidate_kf_kpt_id) == candidate_keypoints.end()) {
-      continue;
-    }
+    if (candidate_keypoints.find(match.candidate_kf_kpt_id) == candidate_keypoints.end()) { continue; }
 
     Eigen::Vector2f p1 = current_keypoints[match.current_kf_kpt_id].translation();
     Eigen::Vector2f p2 = candidate_keypoints[match.candidate_kf_kpt_id].translation();
@@ -860,9 +839,7 @@ void VIOUIBase::draw_similar_keyframes_overlay(const VioDatasetPtr& vio_dataset,
 
       glColor3ubv(ORANGE);
       for (const auto& [kpid, kpts] : redetected_kpts) {
-        for (const auto& p : kpts) {
-          pangolin::glDrawCirclePerimeter(p.cast<double>(), 3.0f);
-        }
+        for (const auto& p : kpts) { pangolin::glDrawCirclePerimeter(p.cast<double>(), 3.0f); }
       }
     }
 
@@ -870,9 +847,7 @@ void VIOUIBase::draw_similar_keyframes_overlay(const VioDatasetPtr& vio_dataset,
       Eigen::aligned_vector<Eigen::Matrix<float, 2, 1>>& rematched_keypoints =
           curr_lc_vis_data->rematched_keypoints[index];
       glColor3ubv(BLUE);
-      for (const auto& p : rematched_keypoints) {
-        pangolin::glDrawCirclePerimeter(p.cast<double>(), 3.0f);
-      }
+      for (const auto& p : rematched_keypoints) { pangolin::glDrawCirclePerimeter(p.cast<double>(), 3.0f); }
     }
   }
 
@@ -883,9 +858,8 @@ void VIOUIBase::draw_similar_keyframes_overlay(const VioDatasetPtr& vio_dataset,
   similar_keyframes_view->SetImage(combined_imgs.ptr, combined_imgs.w, combined_imgs.h, combined_imgs.pitch, fmt);
 
   std::ostringstream ss;
-  ss << (similar_kf_idx + 1) << " of " << similar_kf_count << " - " << (island_idx + 1) << " of " << islands_count
-     << " - " << timestamp_to_id[candidate_tcid.frame_id] << " : " << candidate_tcid.frame_id << " ("
-     << candidate_tcid.cam_id << ")";
+  ss << (similar_kf_idx + 1) << " of " << similar_kf_count << " - " << timestamp_to_id[candidate_tcid.frame_id] << " : "
+     << candidate_tcid.frame_id << " (" << candidate_tcid.cam_id << ")";
 
   FONT.Text(ss.str()).Draw(5 + current_img->w, 20);
 

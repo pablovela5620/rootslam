@@ -117,8 +117,7 @@
         "config.loop_closing_reprojected_pnp_min_inliers": 30,
         "config.loop_closing_pnp_inliers_ratio": 0.6,
         "config.loop_closing_debug": true,
-        "config.cameras_to_export": [0,1],
-        "config.debug1": false,
+        "config.map_show_covisibility": false,
         "config.debug2": false,
         "config.debug3": false,
         "config.causal_evaluation": true

@@ -313,6 +313,7 @@ void serialize(Archive& ar, basalt::VioConfig& config) {
   ar(CEREAL_NVP(config.map_debug));
   ar(CEREAL_NVP(config.map_max_keyframes));
   ar(CEREAL_NVP(config.map_batch_cull_size));
+  ar(CEREAL_NVP(config.map_show_covisibility));
 
   ar(CEREAL_NVP(config.mapper_obs_std_dev));
   ar(CEREAL_NVP(config.mapper_obs_huber_thresh));
@@ -357,15 +358,10 @@ void serialize(Archive& ar, basalt::VioConfig& config) {
   ar(CEREAL_NVP(config.loop_closing_pnp_inliers_ratio));
   ar(CEREAL_NVP(config.loop_closing_debug));
 
-  ar(CEREAL_NVP(config.debug1));
   ar(CEREAL_NVP(config.debug2));
   ar(CEREAL_NVP(config.debug3));
 
-  ar(CEREAL_NVP(config.cameras_to_export));
-
   ar(CEREAL_NVP(config.causal_evaluation));
-
-  ar(CEREAL_NVP(config.debug1));
 
   ar(CEREAL_NVP(config.mapper_use_lm));
   ar(CEREAL_NVP(config.mapper_lm_lambda_min));
