@@ -238,7 +238,7 @@ void MapDatabase::handle_loop_closure(LoopClosureResult::Ptr& loop_closure_resul
 
   merge_loop_landmarks(loop_detection_result);
 
-  if (loop_closure_result->keyframe_poses != nullptr && out_opt_poses_queue && !config.causal_evaluation) {
+  if (loop_closure_result->keyframe_poses != nullptr && out_opt_poses_queue) {
     auto opt_poses_update = std::make_shared<basalt::OptimizedPosesUpdate>();
     opt_poses_update->keyframe_poses = loop_closure_result->keyframe_poses;
     out_opt_poses_queue->push(opt_poses_update);
@@ -434,7 +434,7 @@ void MapDatabase::initialize() {
               map.print();
               covisibility_graph.print_stats();
               if (!map_export_path.empty()) {
-                saveEuroc(map_export_path + "/tracking.csv");
+                saveEuroc(map_export_path + "/kf_trajectory.csv");
                 saveJson(map_export_path + "/map.json");
                 covisibility_graph.saveJson(map_export_path + "/covisibility_graph.json");
               }

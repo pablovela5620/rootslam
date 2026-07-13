@@ -152,11 +152,6 @@ struct VioConfig {
   double loop_closing_pnp_inliers_ratio;
   bool loop_closing_debug;
 
-  bool causal_evaluation;
-
-  bool debug2;
-  bool debug3;
-
   double mapper_obs_std_dev;
   double mapper_obs_huber_thresh;
   int mapper_detection_num_points;

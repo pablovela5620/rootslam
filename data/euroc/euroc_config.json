@@ -117,9 +117,6 @@
         "config.loop_closing_pnp_min_inliers": 30,
         "config.loop_closing_reprojected_pnp_min_inliers": 40,
         "config.loop_closing_pnp_inliers_ratio": 0.7,
-        "config.loop_closing_debug": true,
-        "config.debug2": false,
-        "config.debug3": false,
-        "config.causal_evaluation": true
+        "config.loop_closing_debug": true
     }
 }

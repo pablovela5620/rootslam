@@ -203,6 +203,9 @@ struct basalt_vio_ui : vis::VIOUIBase {
   Eigen::aligned_vector<Eigen::Vector3d> vio_t_w_i;
   Eigen::aligned_vector<Sophus::SE3d> vio_T_w_i;
 
+  std::vector<int64_t> rt_t_ns;
+  Eigen::aligned_vector<Sophus::SE3d> rt_T_w_i;
+
   std::vector<vit::TimeStats> time_stats;
 
   std::vector<int64_t> gt_t_ns;
@@ -244,7 +247,6 @@ struct basalt_vio_ui : vis::VIOUIBase {
   std::chrono::high_resolution_clock::time_point time_start;
   bool aborted = false;
   bool initially_aligned = false;
-  std::string colmap_export_path;
   std::string map_export_path;
 
   thread feed_images_thread;
@@ -342,7 +344,6 @@ struct basalt_vio_ui : vis::VIOUIBase {
     app.add_option("--max-frames", max_frames, "Limit number of frames to process from dataset (0 means unlimited)");
     app.add_option("--deterministic-mapper", deterministic_mapper, "Make the mapper synchronous");
     app.add_option("--max-gui-frames", max_gui_frames, "Limit UI frames in memory (unlimited: 0, default: 10000)");
-    app.add_option("--export-colmap-path", colmap_export_path, "Path to export COLMAP files.");
     app.add_option("--map-export-path", map_export_path, "Path to export the map.");
 
     try {
@@ -702,6 +703,10 @@ struct basalt_vio_ui : vis::VIOUIBase {
     vio_t_ns.emplace_back(data->t_ns);
     vio_t_w_i.emplace_back(pos_w_i);
     vio_T_w_i.emplace_back(T_w_i);
+
+    // Keep an untouched copy of the realtime pose for rt_trajectory.csv.
+    rt_t_ns.emplace_back(data->t_ns);
+    rt_T_w_i.emplace_back(T_w_i);
 
     if (show_gui) {
       double t_s = (t_ns - start_t_ns) * 1e-9;
@@ -1628,15 +1633,16 @@ struct basalt_vio_ui : vis::VIOUIBase {
   }
 
   void saveTrajectoryButton() {
+    string rt_trajectory_name = string("rt_") + trajectory_name;
     if (tum_rgbd_fmt) {
       {
-        std::ofstream os(trajectory_name);
+        std::ofstream os(rt_trajectory_name);
 
         os << "# timestamp tx ty tz qx qy qz qw" << std::endl;
 
-        for (size_t i = 0; i < vio_t_ns.size(); i++) {
-          const Sophus::SE3d& pose = vio_T_w_i[i];
-          os << std::scientific << std::setprecision(18) << vio_t_ns[i] * 1e-9 << " " << pose.translation().x() << " "
+        for (size_t i = 0; i < rt_t_ns.size(); i++) {
+          const Sophus::SE3d& pose = rt_T_w_i[i];
+          os << std::scientific << std::setprecision(18) << rt_t_ns[i] * 1e-9 << " " << pose.translation().x() << " "
              << pose.translation().y() << " " << pose.translation().z() << " " << pose.unit_quaternion().x() << " "
              << pose.unit_quaternion().y() << " " << pose.unit_quaternion().z() << " " << pose.unit_quaternion().w()
              << std::endl;
@@ -1659,35 +1665,35 @@ struct basalt_vio_ui : vis::VIOUIBase {
         os.close();
       }
 
-      std::cout << "Saved trajectory in TUM RGB-D Dataset format in " << trajectory_name << std::endl;
+      std::cout << "Saved trajectory in TUM RGB-D Dataset format in " << rt_trajectory_name << std::endl;
     } else if (euroc_fmt) {
-      std::ofstream os(trajectory_name);
+      std::ofstream os(rt_trajectory_name);
 
       os << "#timestamp [ns],p_RS_R_x [m],p_RS_R_y [m],p_RS_R_z [m],q_RS_w "
             "[],q_RS_x [],q_RS_y [],q_RS_z []"
          << std::endl;
 
-      for (size_t i = 0; i < vio_t_ns.size(); i++) {
-        const Sophus::SE3d& pose = vio_T_w_i[i];
-        os << std::fixed << std::setprecision(10) << vio_t_ns[i] << "," << pose.translation().x() << ","
+      for (size_t i = 0; i < rt_t_ns.size(); i++) {
+        const Sophus::SE3d& pose = rt_T_w_i[i];
+        os << std::fixed << std::setprecision(10) << rt_t_ns[i] << "," << pose.translation().x() << ","
            << pose.translation().y() << "," << pose.translation().z() << "," << pose.unit_quaternion().w() << ","
            << pose.unit_quaternion().x() << "," << pose.unit_quaternion().y() << "," << pose.unit_quaternion().z()
            << std::endl;
       }
 
-      std::cout << "Saved trajectory in Euroc Dataset format in " << trajectory_name << std::endl;
+      std::cout << "Saved trajectory in Euroc Dataset format in " << rt_trajectory_name << std::endl;
     } else {
-      std::ofstream os(trajectory_name);
+      std::ofstream os(rt_trajectory_name);
 
-      for (size_t i = 0; i < vio_t_ns.size(); i++) {
-        Eigen::Matrix<double, 3, 4> mat = vio_T_w_i[i].matrix3x4();
+      for (size_t i = 0; i < rt_t_ns.size(); i++) {
+        Eigen::Matrix<double, 3, 4> mat = rt_T_w_i[i].matrix3x4();
         os << std::scientific << std::setprecision(12) << mat.row(0) << " " << mat.row(1) << " " << mat.row(2) << " "
            << std::endl;
       }
 
       os.close();
 
-      std::cout << "Saved trajectory in KITTI Dataset format in " << trajectory_name << std::endl;
+      std::cout << "Saved trajectory in KITTI Dataset format in " << rt_trajectory_name << std::endl;
     }
   }
 
