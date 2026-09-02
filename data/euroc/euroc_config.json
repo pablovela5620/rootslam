@@ -113,10 +113,10 @@
         "config.loop_closing_min_drift_reduction": 0.1,
         "config.loop_closing_min_rot_reduction_deg": 2.0,
         "config.loop_closing_min_initial_matches": 10,
-        "config.loop_closing_min_island_matches": 40,
-        "config.loop_closing_pnp_min_inliers": 30,
-        "config.loop_closing_reprojected_pnp_min_inliers": 40,
-        "config.loop_closing_pnp_inliers_ratio": 0.7,
+        "config.loop_closing_min_island_matches": 20,
+        "config.loop_closing_pnp_min_inliers": 10,
+        "config.loop_closing_reprojected_pnp_min_inliers": 20,
+        "config.loop_closing_pnp_inliers_ratio": 0.5,
         "config.loop_closing_debug": true
     }
 }

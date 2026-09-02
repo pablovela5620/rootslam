@@ -1,4 +1,5 @@
 #include <basalt/vi_estimator/covisibility_graph.h>
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
@@ -269,6 +270,33 @@ CovisibilityGraph CovisibilityGraph::copyPoseGraph() const {
   copy.high_covisibility_edges_ = high_covisibility_edges_;
 
   return copy;
+}
+
+std::vector<PoseGraphEdge> CovisibilityGraph::getPoseGraphEdges() const {
+  std::vector<PoseGraphEdge> edges;
+
+  for (const auto& [id, node] : tree_) {
+    if (node.parent == invalid()) continue;  // the root has no parent edge
+    edges.push_back({node.parent, id, PoseGraphEdgeType::SPANNING_TREE});
+  }
+
+  for (const auto& [id1, loop_closures] : loop_closures_) {
+    for (const auto& id2 : loop_closures) {
+      if (id1 < id2) { edges.push_back({id1, id2, PoseGraphEdgeType::LOOP_CLOSURE}); }
+    }
+  }
+
+  for (const auto& covi_edge : high_covisibility_edges_) {
+    // Skip the ones that are already part of the spanning tree
+    auto it1 = tree_.find(covi_edge.id1);
+    if (it1 != tree_.end() && it1->second.parent == covi_edge.id2) continue;
+    auto it2 = tree_.find(covi_edge.id2);
+    if (it2 != tree_.end() && it2->second.parent == covi_edge.id1) continue;
+
+    edges.push_back({covi_edge.id1, covi_edge.id2, PoseGraphEdgeType::HIGH_COVISIBILITY});
+  }
+
+  return edges;
 }
 
 void CovisibilityGraph::print_stats() const {

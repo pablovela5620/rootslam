@@ -22,6 +22,28 @@ struct CovisibilityEdge {
   };
 };
 
+enum class PoseGraphEdgeType { SPANNING_TREE, LOOP_CLOSURE, HIGH_COVISIBILITY };
+
+inline const char* toString(PoseGraphEdgeType type) {
+  switch (type) {
+    case PoseGraphEdgeType::SPANNING_TREE:
+      return "spanning_tree";
+    case PoseGraphEdgeType::LOOP_CLOSURE:
+      return "loop_closure";
+    case PoseGraphEdgeType::HIGH_COVISIBILITY:
+      return "high_covisibility";
+  }
+  return "unknown";
+}
+
+// Edge of the pose graph that is optimized on a loop closure. id1 is the parent for spanning tree
+// edges and the smaller id for the other edge types.
+struct PoseGraphEdge {
+  FrameId id1;
+  FrameId id2;
+  PoseGraphEdgeType type;
+};
+
 struct NodeScore {
   FrameId id;
 
@@ -77,6 +99,10 @@ class CovisibilityGraph {
   NodeScore computeGraphScore(FrameId id) const;
 
   CovisibilityGraph copyPoseGraph() const;
+
+  // Edges that make up the pose graph optimized on a loop closure: the spanning tree, the loop
+  // closures and the high covisibility edges that are not already spanning tree edges.
+  std::vector<PoseGraphEdge> getPoseGraphEdges() const;
 
   void saveJson(const std::string& file_path) const;
 

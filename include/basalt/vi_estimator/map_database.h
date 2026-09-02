@@ -144,6 +144,10 @@ class MapDatabase {
 
   void saveJson(const std::string& file_path);
 
+  // Dumps the pose graph optimized on a loop closure in the format expected by rootba's
+  // --pose-graph-file (see rootba/docs/PoseGraphFormat.md)
+  void savePoseGraphJson(const std::string& file_path);
+
   inline void maybe_join() {
     if (reading_thread) {
       reading_thread->join();

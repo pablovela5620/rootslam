@@ -1,6 +1,8 @@
 #include <basalt/vi_estimator/map_database.h>
+#include <algorithm>
 #include <filesystem>
 #include <nlohmann/json.hpp>
+#include <tuple>
 
 namespace basalt {
 
@@ -437,6 +439,7 @@ void MapDatabase::initialize() {
                 saveEuroc(map_export_path + "/kf_trajectory.csv");
                 saveJson(map_export_path + "/map.json");
                 covisibility_graph.saveJson(map_export_path + "/covisibility_graph.json");
+                savePoseGraphJson(map_export_path + "/pose_graph.json");
               }
               if (out_vis_queue) out_vis_queue->push(nullptr);
               if (out_opt_poses_queue) out_opt_poses_queue->push(nullptr);
@@ -863,6 +866,59 @@ void MapDatabase::saveEuroc(const std::string& file_path) {
   }
 
   std::cout << "Saved trajectory in Euroc Dataset format in " << file_path << std::endl;
+}
+
+void MapDatabase::savePoseGraphJson(const std::string& file_path) {
+  std::unique_lock<std::mutex> lock(mutex);
+
+  std::filesystem::create_directories(std::filesystem::path(file_path).parent_path());
+  std::ofstream json_file;
+  json_file.open(file_path);
+
+  const Eigen::aligned_map<FrameId, Sophus::SE3f>& keyframes = map.getKeyframes();
+
+  // Sorted so that the dump is stable and diffable across runs
+  std::vector<PoseGraphEdge> edges = covisibility_graph.getPoseGraphEdges();
+  std::sort(edges.begin(), edges.end(), [](const PoseGraphEdge& a, const PoseGraphEdge& b) {
+    return std::tie(a.id1, a.id2, a.type) < std::tie(b.id1, b.id2, b.type);
+  });
+
+  size_t skipped_edges = 0;
+
+  nlohmann::json edges_json = nlohmann::json::array();
+  for (const auto& edge : edges) {
+    auto it_a = keyframes.find(edge.id1);
+    auto it_b = keyframes.find(edge.id2);
+    if (it_a == keyframes.end() || it_b == keyframes.end()) {
+      skipped_edges++;
+      continue;
+    }
+
+    // T_a_b maps points from b's frame into a's frame, same convention as the T_w_i of the map
+    Sophus::SE3d T_a_b = (it_a->second.inverse() * it_b->second).template cast<double>();
+    Eigen::Quaterniond q = T_a_b.unit_quaternion();
+    Eigen::Vector3d t = T_a_b.translation();
+
+    nlohmann::json edge_json;
+    edge_json["kf_id_a"] = edge.id1;
+    edge_json["kf_id_b"] = edge.id2;
+    edge_json["T_a_b"] = {q.w(), q.x(), q.y(), q.z(), t.x(), t.y(), t.z()};
+    // Not read by rootba, kept to tell the edge kinds apart when analyzing the graph
+    edge_json["type"] = toString(edge.type);
+    edges_json.push_back(edge_json);
+  }
+
+  nlohmann::json j;
+  j["edges"] = edges_json;
+
+  json_file << j.dump(2);
+  json_file.close();
+
+  std::cout << "Saved pose graph with " << edges_json.size() << " edges in " << file_path << std::endl;
+  if (skipped_edges > 0) {
+    std::cout << "  Warning: skipped " << skipped_edges << " edges referencing keyframes that are not in the map"
+              << std::endl;
+  }
 }
 
 void MapDatabase::saveJson(const std::string& file_path) {

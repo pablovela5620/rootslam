@@ -737,89 +737,49 @@ void LoopClosing::buildPoseGraph(const LoopDetectionResult::Ptr& loop_detection_
     map_of_poses[kf_id] = Pose3d{pose.translation().cast<double>(), pose.unit_quaternion().cast<double>()};
   }
 
-  // TODO: check that i'm only adding each edge once
-
   size_t spanning_tree_edges = 0;
   size_t past_lc_edges = 0;
   size_t covisibility_edges = 0;
   size_t current_lc_edges = 0;
 
-  // Add the constraints based on the relative poses of the spanning tree
-  FrameId spanning_tree_root = covisibility_graph.getRoot();
-  for (const auto& [kf_id, T_w_i] : keyframe_poses) {
-    if (kf_id == spanning_tree_root) continue;
-
-    FrameId parent_kf_id = covisibility_graph.getParentId(kf_id);
+  // Add the constraints of the pose graph: spanning tree, past loop closures and high covisibility
+  // edges. This is the same edge set that gets dumped to pose_graph.json at the end of the sequence.
+  for (const auto& edge : covisibility_graph.getPoseGraphEdges()) {
+    auto it_i = keyframe_poses.find(edge.id1);
+    auto it_j = keyframe_poses.find(edge.id2);
 
     // TODO@tsantucci: remove this check
-    if (keyframe_poses.find(parent_kf_id) == keyframe_poses.end()) {
-      std::cout << "[LC] Warning: Parent keyframe " << parent_kf_id << " of keyframe " << kf_id
-                << " not found in the current pose graph. Skipping this constraint." << std::endl;
-    }
-    Sophus::SE3f T_w_p = keyframe_poses.at(parent_kf_id);
-    Sophus::SE3f T_p_i = T_w_p.inverse() * T_w_i;
-    Constraint3d c;
-    c.id_begin = parent_kf_id;
-    c.id_end = kf_id;
-    Pose3d relative_pose;
-    relative_pose.p = T_p_i.translation().cast<double>();
-    relative_pose.q = T_p_i.unit_quaternion().cast<double>();
-    c.t_be = relative_pose;
-    c.information = Eigen::Matrix<double, 6, 6>::Identity();
-    constraints.push_back(c);
-    spanning_tree_edges++;
-  }
-
-  // Add the past loop closure constraints
-  for (const auto& [kf_id, loop_closures] : covisibility_graph.getLoopClosures()) {
-    for (const auto& loop_kf_id : loop_closures) {
-      if (kf_id < loop_kf_id) {
-        Sophus::SE3f T_w_i = keyframe_poses.at(kf_id);
-        Sophus::SE3f T_w_j = keyframe_poses.at(loop_kf_id);
-        Sophus::SE3f T_i_j = T_w_i.inverse() * T_w_j;
-        Constraint3d c;
-        c.id_begin = kf_id;
-        c.id_end = loop_kf_id;
-        Pose3d relative_pose;
-        relative_pose.p = T_i_j.translation().cast<double>();
-        relative_pose.q = T_i_j.unit_quaternion().cast<double>();
-        c.t_be = relative_pose;
-        c.information = Eigen::Matrix<double, 6, 6>::Identity();
-        constraints.push_back(c);
-        past_lc_edges++;
-      }
-    }
-  }
-
-  // Add constraints for the most covisible keyframes
-  for (const auto& covi_edge : covisibility_graph.getHighCovisibilityEdges()) {
-    FrameId kf_id = covi_edge.id1;
-    FrameId covisible_kf_id = covi_edge.id2;
-
-    if (kf_id != spanning_tree_root) {
-      if (covisibility_graph.getParentId(kf_id) == covisible_kf_id) {
-        continue;  // already added as part of the spanning tree
-      }
-    }
-    if (covisible_kf_id != spanning_tree_root) {
-      if (covisibility_graph.getParentId(covisible_kf_id) == kf_id) {
-        continue;  // already added as part of the spanning tree
-      }
+    if (it_i == keyframe_poses.end() || it_j == keyframe_poses.end()) {
+      std::cout << "[LC] Warning: Keyframe " << (it_i == keyframe_poses.end() ? edge.id1 : edge.id2)
+                << " of pose graph edge (" << edge.id1 << ", " << edge.id2
+                << ") not found in the current pose graph. Skipping this constraint." << std::endl;
+      continue;
     }
 
-    Sophus::SE3f T_w_i = keyframe_poses.at(kf_id);
-    Sophus::SE3f T_w_j = keyframe_poses.at(covisible_kf_id);
+    const Sophus::SE3f& T_w_i = it_i->second;
+    const Sophus::SE3f& T_w_j = it_j->second;
     Sophus::SE3f T_i_j = T_w_i.inverse() * T_w_j;
     Constraint3d c;
-    c.id_begin = kf_id;
-    c.id_end = covisible_kf_id;
+    c.id_begin = edge.id1;
+    c.id_end = edge.id2;
     Pose3d relative_pose;
     relative_pose.p = T_i_j.translation().cast<double>();
     relative_pose.q = T_i_j.unit_quaternion().cast<double>();
     c.t_be = relative_pose;
     c.information = Eigen::Matrix<double, 6, 6>::Identity();
     constraints.push_back(c);
-    covisibility_edges++;
+
+    switch (edge.type) {
+      case PoseGraphEdgeType::SPANNING_TREE:
+        spanning_tree_edges++;
+        break;
+      case PoseGraphEdgeType::LOOP_CLOSURE:
+        past_lc_edges++;
+        break;
+      case PoseGraphEdgeType::HIGH_COVISIBILITY:
+        covisibility_edges++;
+        break;
+    }
   }
 
   // Add the current loop closure constraints
