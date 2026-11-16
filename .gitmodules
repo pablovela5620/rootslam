@@ -30,3 +30,10 @@
 [submodule "thirdparty/ceres-solver"]
 	path = thirdparty/ceres-solver
 	url = https://github.com/ceres-solver/ceres-solver.git
+[submodule "thirdparty/rootba"]
+	path = thirdparty/rootba
+	url = https://github.com/TomasSantucci/rootba.git
+	branch = fixed-intrinsics
+[submodule "thirdparty/xrtslam-metrics"]
+	path = thirdparty/xrtslam-metrics
+	url = https://gitlab.freedesktop.org/mateosss/xrtslam-metrics.git

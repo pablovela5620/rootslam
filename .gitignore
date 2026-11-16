@@ -17,3 +17,12 @@ x-tools
 cmake_modules/jammy-arm64-sysroot
 cmake_modules/bookworm-arm64-sysroot
 cmake_modules/bullseye-arm64-sysroot
+
+# pixi
+.pixi/
+.ccache/
+
+# reproduction outputs and data (never commit)
+runs/
+datasets/
+results/summary.json

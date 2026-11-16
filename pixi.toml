@@ -1,0 +1,138 @@
+[workspace]
+name = "rootslam"
+description = "RootSLAM reproduction: Basalt VIO + loop closure (this repo) + rootba global square-root BA + xrtslam-metrics evaluation"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+# ---------------------------------------------------------------------------
+# C++ build of basalt_vio (this repo) and bal (thirdparty/rootba)
+# ---------------------------------------------------------------------------
+[feature.build.dependencies]
+cxx-compiler = "*"
+c-compiler = "*"
+cmake = ">=3.24,<4"
+ninja = "*"
+make = "*"
+pkg-config = "*"
+ccache = "*"
+git = "*"
+# basalt
+tbb-devel = "2022.*"
+opencv = "4.*"
+fmt = "11.*"
+libboost-devel = "*"
+lz4-c = "*"
+bzip2 = "*"
+libjpeg-turbo = "*"
+libpng = "*"
+yaml-cpp = "*"
+libsqlite = "*"
+# ceres (submodule) + CI uses -DBLA_VENDOR=OpenBLAS
+libblas = { version = "*", build = "*openblas" }
+liblapack = { version = "*", build = "*openblas" }
+openblas = "*"
+# rootba
+glog = "*"
+# Pangolin (both repos build it from their submodules): GL / windowing headers
+glew = "*"
+epoxy = "*"
+libgl-devel = "*"
+libegl-devel = "*"
+libopengl-devel = "*"
+xorg-libx11 = "*"
+xorg-libxext = "*"
+xorg-libxrandr = "*"
+xorg-libxi = "*"
+xorg-xorgproto = "*"
+libxkbcommon = "*"
+wayland = "*"
+wayland-protocols = "*"
+gdb = "*"
+jq = "*"
+
+[feature.build.activation.env]
+CMAKE_PREFIX_PATH = "$CONDA_PREFIX"
+CCACHE_DIR = "$PIXI_PROJECT_ROOT/.ccache"
+
+[feature.build.tasks.configure-basalt]
+cmd = "cmake --preset=development -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DBASALT_INSTANTIATIONS_DOUBLE=off -DBLA_VENDOR=OpenBLAS -DBASALT_ENABLE_ROSBAG2=OFF"
+inputs = ["CMakeLists.txt", "CMakePresets.json"]
+description = "Configure basalt like the CI evaluation build (development preset, float instantiations only, OpenBLAS)"
+
+[feature.build.tasks.build-basalt]
+cmd = "cmake --build build --target basalt_vio -j $BUILD_JOBS"
+env = { BUILD_JOBS = "8" }
+depends-on = ["configure-basalt"]
+description = "Build basalt_vio (VIO + loop closure + map / pose-graph export)"
+
+[feature.build.tasks.patch-rootba]
+cmd = "git apply --reverse --check ../../patches/rootba-pangolin-no-ffmpeg.patch 2>/dev/null || git apply ../../patches/rootba-pangolin-no-ffmpeg.patch"
+cwd = "thirdparty/rootba"
+description = "Disable Pangolin's ffmpeg driver in rootba's externals (conda-forge ffmpeg 8 removed avcodec_close); idempotent"
+
+[feature.build.tasks.build-rootba-external]
+cmd = "bash scripts/build-external.sh Release"
+depends-on = ["patch-rootba"]
+cwd = "thirdparty/rootba"
+env = { OMP_NUM_THREADS = "8", CXX_MARCH = "native" }  # GNU nproc honours OMP_NUM_THREADS: caps make -j
+outputs = ["thirdparty/rootba/external/install/lib/libfmt.a"]
+description = "Build rootba's pinned externals (Eigen 3.4.0, Pangolin, cereal, fmt, abseil) into thirdparty/rootba/external/install"
+
+[feature.build.tasks.build-rootba]
+cmd = "bash scripts/build-rootba.sh Release -DROOTBA_ENABLE_TESTING=OFF -DCMAKE_PREFIX_PATH=$PIXI_PROJECT_ROOT/thirdparty/rootba/external/install;$CONDA_PREFIX"
+cwd = "thirdparty/rootba"
+env = { CMAKE_BUILD_PARALLEL_LEVEL = "8", CXX_MARCH = "native" }
+depends-on = ["build-rootba-external"]
+description = "Build rootba's bal (global square-root BA, with the pose-graph residuals)"
+
+[feature.build.tasks.build]
+depends-on = ["build-basalt", "build-rootba"]
+description = "Build basalt_vio and bal"
+
+# ---------------------------------------------------------------------------
+# Evaluation (xrtslam-metrics, the CI's ATE scripts) and Rerun logging
+# ---------------------------------------------------------------------------
+[feature.metrics.dependencies]
+python = "3.12.*"
+numpy = ">=2.2"
+pandas = ">=2.2"
+tabulate = "*"
+evo = "*"
+pybind11 = "*"
+mypy = "*"  # stubgen, used by the metrics Makefile
+mplcursors = "*"
+matplotlib-base = "*"
+pyqt = "5.*"
+rosbags = "0.11.*"
+cxx-compiler = "*"
+cmake = ">=3.24,<4"
+make = "*"
+
+
+[feature.metrics.tasks.build-metrics-cpp]
+cmd = "make SOPHUS_DIR=$PIXI_PROJECT_ROOT/thirdparty/basalt-headers/thirdparty/Sophus EIGEN_DIR=$PIXI_PROJECT_ROOT/thirdparty/basalt-headers/thirdparty/eigen"
+cwd = "thirdparty/xrtslam-metrics/cpp"
+description = "Build xrtslam-metrics' C++ alignment module (needed for atec / rtec)"
+
+[feature.metrics.tasks.repro-seq]
+cmd = "bash scripts/repro/run_sequence.sh"
+description = "Run one sequence like the branch CI (VIO+LC, plain Basalt, 3 x bal) and merge per-frame trajectories: pixi run repro-seq EMH01"
+
+[feature.metrics.tasks.repro-queue]
+cmd = "bash scripts/repro/run_queue.sh"
+description = "Run run_sequence + evaluate over several keys (several workers may share one list): pixi run repro-queue EMH01 EMH02 ..."
+
+[feature.metrics.tasks.repro-eval]
+cmd = "python scripts/repro/evaluate.py"
+description = "Score runs with xrtslam-metrics association: SE(3) / Sim(3) ATE, RTE: pixi run repro-eval runs/EMH01"
+
+[feature.metrics.tasks.repro-summary]
+cmd = "python scripts/repro/summarize.py --out results"
+description = "Tabulate ours vs paper (Table I groups, All*, per sequence) into results/summary.md"
+
+[feature.viz.dependencies]
+rerun-sdk = "0.42.*"
+
+[environments]
+default = { features = ["build", "metrics", "viz"], solve-group = "main" }
+metrics = { features = ["metrics", "viz"], solve-group = "main" }
